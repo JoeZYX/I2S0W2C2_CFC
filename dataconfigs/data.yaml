@@ -1,0 +1,10 @@
+hapt:
+  filename: "HAPThar_Dataset"
+  sampling_freq: 50
+  num_classes: 12
+  num_channels: 6
+ear:
+  filename: "EAR_Dataset"
+  sampling_freq: 20
+  num_classes: 20
+  num_channels: 20
