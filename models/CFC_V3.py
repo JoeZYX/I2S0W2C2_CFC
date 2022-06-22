@@ -40,7 +40,7 @@ class SelfAttention(nn.Module):
         o = self.gamma * torch.bmm(h, beta) + x
         return o.view(*size).contiguous()
     
-class CFC_Model(nn.Module):
+class CFC_V3_Model(nn.Module):
     def __init__(
         self,
         input_shape ,
@@ -49,10 +49,11 @@ class CFC_Model(nn.Module):
         filter_size = 5,
         nb_conv_layers = 4,
         dropout = 0.2,
+        hidden_dim = 16,
         activation = "ReLU",
         sa_div= 1,
     ):
-        super(CFC_Model, self).__init__()
+        super(CFC_V3_Model, self).__init__()
         
         # PART 1 , Channel wise Feature Extraction
         
@@ -78,29 +79,26 @@ class CFC_Model(nn.Module):
 
         self.sa = SelfAttention(filter_num, sa_div)
         
-        shape = self.get_the_shape(input_shape)
+
 
         # PART 3 , Prediction 
         
         self.activation = nn.ReLU() 
-        self.fc1 = nn.Linear(input_shape[3]*filter_num ,filter_num)
-        self.flatten = nn.Flatten()
-        self.fc2 = nn.Linear(shape[1]*filter_num ,filter_num)
-        self.fc3 = nn.Linear(filter_num ,number_class)
+        self.fc1 = nn.Linear(input_shape[3]*filter_num ,hidden_dim)
+
+        self.rnn = nn.GRU(
+            hidden_dim,
+            hidden_dim,
+            2,
+            bidirectional=False,
+            dropout=0.15,
+        )
+
+        self.prediction = nn.Linear(hidden_dim ,number_class)
 
 
         
-    def get_the_shape(self, input_shape):
-        x = torch.rand(input_shape)
-        #x = x.unsqueeze(1)
-        for layer in self.layers_conv:
-            x = layer(x)    
-        atten_x = torch.cat(
-            [self.sa(torch.unsqueeze(x[:, :, t, :], dim=3)) for t in range(x.shape[2])],
-            dim=-1,
-        )
-        atten_x = atten_x.permute(0, 3, 1, 2)
-        return atten_x.shape
+
 
     def forward(self, x):
         # B ? L C
@@ -127,8 +125,10 @@ class CFC_Model(nn.Module):
         x = x.reshape(x.shape[0], x.shape[1], -1)
         x = self.dropout(x)
         
-        x = self.activation(self.fc1(x)) # B L C
-        x = self.flatten(x)
-        x = self.activation(self.fc2(x)) # B L C
-        y = self.fc3(x)    
+        x = self.activation(self.fc1(x)) # B L F
+        x = x.permute(1,0,2)
+
+        outputs, h = self.rnn(x) # L B  F
+        x = outputs[-1, :, :]
+        y = self.prediction(x)    
         return y

@@ -8,18 +8,11 @@ import numpy as np
 import time
 from dataloaders import data_dict,data_set
 from sklearn.metrics import confusion_matrix
+import yaml
+
 # import models
-from models.crossatten.model import Cross_TS,TSTransformer_Basic
-from models.deepconvlstm import DeepConvLSTM
-from models.SA_HAR import SA_HAR
-from models.deepconvlstm_attn import DeepConvLSTM_ATTN
-from models.Attend import AttendDiscriminate
-from models.Attend_new import AttendDiscriminate_new
-from models.CNN_freq import CNN_Freq_Model
-from models.CNN_LSTM_FREQ import CNN_LSTM_FREQ_Model
-from models.CNN_LSTM_TIME import CNN_LSTM_TIME_Model
-from models.CNN_LSTM_TIME_FREQ import CNN_LSTM_CROSS_Model
-from models.CFC import CFC_Model
+from models.model_builder import model_builder
+
 from torch.utils.data.sampler import WeightedRandomSampler
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import f1_score
@@ -27,24 +20,30 @@ from utils import EarlyStopping, adjust_learning_rate_class, mixup_data, MixUpLo
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
-#torch.manual_seed(0)
-#import random
-#random.seed(0)
-#np.random.seed(0)
+
+import random
+
 
 
 class Exp(object):
     def __init__(self, args):
         self.args = args
+
         # set the device
         self.device = self.acquire_device()
+
         self.optimizer_dict = {"Adam":optim.Adam}
         self.criterion_dict = {"MSE":nn.MSELoss,"CrossEntropy":nn.CrossEntropyLoss}
 
         self.model  = self.build_model().to(self.device)
         print("Done!")
-        print("Parameter :", np.sum([para.numel() for para in self.model.parameters()]))
+        self.model_size = np.sum([para.numel() for para in self.model.parameters()])
+        print("Parameter :", self.model_size)
 
+        torch.manual_seed(self.args.seed)
+        random.seed(self.args.seed)
+        np.random.seed(self.args.seed)
+        print("Set the seed as : ", self.args.seed)
 
     def acquire_device(self):
         if self.args.use_gpu:
@@ -57,44 +56,7 @@ class Exp(object):
         return device
 
     def build_model(self):
-        if self.args.model_type in ["time","freq","cross"]:
-            model  = Cross_TS(self.args)
-            print("Build the conv_TS model!")
-        elif self.args.model_type == "basic":
-            model  = TSTransformer_Basic(self.args)
-            print("Build the basic TS model!")
-        elif self.args.model_type == "deepconvlstm":
-            model  = DeepConvLSTM(self.args.c_in, self.args.num_classes)
-            print("Build the DeepConvLSTM model!")
-        elif self.args.model_type == "sahar":
-            model  = SA_HAR(self.args.c_in, self.args.input_length, self.args.num_classes)
-            print("Build the SA_HAR model!")
-        elif self.args.model_type == "deepconvlstm_attn":
-            model  = DeepConvLSTM_ATTN(self.args.c_in, self.args.num_classes)
-            print("Build the deepconvlstm_attn model!")
-        elif self.args.model_type == "attend":
-            model  = AttendDiscriminate(self.args.c_in, self.args.num_classes)
-            print("Build the AttendDiscriminate model!")
-        elif self.args.model_type == "attend_new":
-            model  = AttendDiscriminate_new(self.args.c_in, self.args.num_classes)
-            print("Build the AttendDiscriminate_new model!")
-        elif self.args.model_type == "cnn_freq":
-            model  = CNN_Freq_Model((1,self.args.c_in, self.args.sampling_freq, self.args.input_length ), self.args.num_classes)
-            print("Build the CNN_Freq_Model model!")		
-        elif self.args.model_type == "cnn_lstm_freq":
-            model  = CNN_LSTM_FREQ_Model((self.args.input_length,self.args.sampling_freq ), self.args.num_classes)
-            print("Build the CNN_LSTM_FREQ_Model model!")					
-        elif self.args.model_type == "cnn_lstm_time":
-            model  = CNN_LSTM_TIME_Model((self.args.input_length, self.args.c_in ), self.args.num_classes)
-            print("Build the CNN_LSTM_TIME_Model model!")		
-        elif self.args.model_type == "cnn_lstm_cross":
-            model  = CNN_LSTM_CROSS_Model((self.args.input_length, self.args.c_in ),(self.args.input_length,self.args.sampling_freq ), self.args.num_classes)
-            print("Build the CNN_LSTM_CROSS_Model model!")
-        elif self.args.model_type == "cfc":
-            model  = CFC_Model((1,self.args.input_length, self.args.c_in ), self.args.num_classes)
-            print("Build the CFC model!")			
-        else:
-            raise NotImplementedError
+        model = model_builder(self.args)
         return model.double()
 
     def _select_optimizer(self):
@@ -111,7 +73,7 @@ class Exp(object):
 
     def _get_data(self, data, flag="train", weighted_sampler = False):
         if flag == 'train':
-            shuffle_flag = True # ++++++++++++++++++++++++++++
+            shuffle_flag = True 
         else:
             shuffle_flag = False
 
@@ -136,79 +98,97 @@ class Exp(object):
                                      drop_last    =  False)
         return data_loader
 
+
+    def get_setting_name(self):
+        if self.args.model_type == "deepconvlstm":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm"]
+            setting = "deepconvlstm_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_lstmfilter_{}_Regu_{}".format(self.args.data_name,
+                                                                                                                                      self.args.seed,
+                                                                                                                                      self.args.windowsize,
+                                                                                                                                      self.args.wavelet_filtering,
+                                                                                                                                      self.args.filter_scaling_factor,
+                                                                                                                                      config["nb_filters"],
+                                                                                                                                      config["nb_units_lstm"],
+                                                                                                                                      self.args.wavelet_filtering_regularization)
+            return setting
+        else:
+            raise NotImplementedError
+
+
+
+    def update_gamma(self ):
+        for n, parameter in self.model.named_parameters():
+            if "gamma" in n:
+                parameter.grad.data.add_(self.args.regulatization_tradeoff*torch.sign(parameter.data))  # L1
+
+
     def train(self):
-        # save_path_need ++++++++++++
-        dateTimeObj = datetime.now()
-        setting = "Time_{}_{}_{}_{}_data{}_mode{}_model{}_win{}_mask{}_drop{}_depth{}_dmodel{}_Weightsample{}".format(dateTimeObj.month, dateTimeObj.day, dateTimeObj.hour, dateTimeObj.minute,
-                                                                                                                      self.args.data_name, self.args.exp_mode, self.args.model_type, 
-                                                                                                                      self.args.windowsize, self.args.attention_layer_types,
-                                                                                                                      self.args.drop_transition, self.args.cross_depth, 
-                                                                                                                      self.args.token_d_model,self.args.weighted_sampler)
+
+
+        setting = self.get_setting_name()
+
         path = os.path.join(self.args.to_save_path,'logs/'+setting)
         self.path = path
         if not os.path.exists(path):
             os.makedirs(path)
 
+        score_log_file_name = os.path.join(self.path, "score.txt")
+
         # load the data
         dataset = data_dict[self.args.data_name](self.args)
-        file_name = "Time_{}_{}_{}_{}_data{}_mode{}_model{}_win{}_mask{}_drop{}_depth{}_dmodel{}_Weightsample{}.txt".format(dateTimeObj.month, dateTimeObj.day, dateTimeObj.hour, dateTimeObj.minute,
-                                                                                                                            self.args.data_name, self.args.exp_mode, self.args.model_type, 
-                                                                                                                            self.args.windowsize, self.args.attention_layer_types, 
-                                                                                                                            self.args.drop_transition, self.args.cross_depth, 
-                                                                                                                            self.args.token_d_model,self.args.weighted_sampler)
-
-
-        if self.args.to_save_path is not None:
-            file_name = os.path.join(self.args.to_save_path, file_name)
-        log = open(file_name, "w+")
-		
-		
-		
-
-        if self.args.exp_mode in ["LOCV", "SOCV","Given"]:
-            file_name_1 = "Time_{}_{}_{}_{}_data{}_mode{}_model{}_win{}_mask{}_score.txt".format(dateTimeObj.month, dateTimeObj.day, dateTimeObj.hour, dateTimeObj.minute,
-                                                                                          self.args.data_name, self.args.exp_mode, self.args.model_type, self.args.windowsize, self.args.attention_layer_types)
-            file_name_1 = os.path.join(self.args.to_save_path, file_name_1)
-            #log_1 = open(file_name_1, "w+")
-
-
 
 
         print("================ {} Mode ====================".format(dataset.exp_mode))
         print("================ {} CV ======================".format(dataset.num_of_cv))
-        log.write("================ {} Mode ====================".format(dataset.exp_mode))
-        log.write("\n")
-        log.write("================ {} CV ======================".format(dataset.num_of_cv))
-        log.write("\n")
+
+
         num_of_cv = dataset.num_of_cv
 
-        log.close()
-        for iter in range(num_of_cv):
-            log = open(file_name, "a")
-            log_1 = open(file_name_1, "a")
 
-            cv_path = os.path.join(path,"cv_{}".format(iter))
+        # ---------------- check the runned cd ------------------
+        files = os.listdir(self.path)
+        files = [file for file in files if "cv" in file]
+        cv_skip_number = None
+        for index in range(len(files)):
+            folder = os.path.join(self.path,"cv_{}".format(index))
+            file_in_folder = os.listdir(folder)
+            for file in file_in_folder:
+                if "final_best_vali" in file:
+                    cv_skip_number = index
+                    break
+
+        for iter in range(num_of_cv):
+            print("================ the {} th CV Experiment ================ ".format(iter))
+	
+            dataset.update_train_val_test_keys()
+
+            if self.args.exp_mode in ["LOCV","SOCV"] and cv_skip_number is not None:
+                if iter<=cv_skip_number:
+                    print("================Skip the {} CV Experiment================".format(iter))
+                    continue
+
+            cv_path = os.path.join(self.path,"cv_{}".format(iter))
             if not os.path.exists(cv_path):
                 os.makedirs(cv_path)
-            print("================ Build the model ================ ".format(iter+1))	
+
+  
+            epoch_log_file_name = os.path.join(cv_path, "epoch_log.txt")
+            if os.path.exists(epoch_log_file_name):
+                os.remove(epoch_log_file_name)
+
+
+            epoch_log = open(epoch_log_file_name, "a")
+            score_log = open(score_log_file_name, "a")
+
+
+            print("================ Build the model ================ ")	
             if self.args.mixup:
                 print(" Using Mixup Training")				
             self.model  = self.build_model().to(self.device)
 
-            print("================ the {} th CV Experiment ================ ".format(iter+1))
-            log.write("================ the {} th CV Experiment ================ ".format(iter+1))
-            log.write("\n")
-            log.write("               NEW BEGIN                  \n")
-            log.write("\n")
-            dataset.update_train_val_test_keys()
 
-            if self.args.exp_mode in ["LOCV","SOCV"] and self.args.cv_skip_number is not None:
-                index_of_cv = dataset.index_of_cv
-                if index_of_cv<=self.args.cv_skip_number:
-                    print("================Skip the {} CV Experiment================".format(index_of_cv+1))
-                    log.write("================ Skip the {} CV Experiment================ ".format(index_of_cv+1))
-                    log.write("\n")
-                    continue
+
             #print("After update the train test split , the class weight :" , dataset.act_weights)
             # get the loader of train val test
             train_loader = self._get_data(dataset, flag = 'train', weighted_sampler = self.args.weighted_sampler )
@@ -271,17 +251,31 @@ class Exp(object):
                         loss = criterion(outputs, batch_y)
                     else:
                         loss = criterion(outputs, batch_y)
+
+                    #if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
+                    #    reg_loss = 0
+                    #    for name,parameter in self.model.named_parameters():
+                    #        if "gamma" in name:
+                    #            reg_loss += torch.sum(torch.abs(parameter))
+
+                    #    loss = loss + self.args.regulatization_tradeoff*reg_loss
+
+
                     train_loss.append(loss.item())
 
                     loss.backward()
+
+                    if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
+                        self.update_gamma()
+
                     model_optim.step()
 
                     #preds.extend(list(np.argmax(outputs.detach().cpu().numpy(),axis=1)))
                     #trues.extend(list(batch_y.detach().cpu().numpy()))   
 
                 print("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
-                log.write("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
-                log.write("\n")
+                epoch_log.write("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
+                epoch_log.write("\n")
                 train_loss = np.average(train_loss)
                 #train_acc_1 = accuracy_score(preds,trues)
                 vali_loss , vali_acc, vali_f_w,  vali_f_macro,  vali_f_micro = self.validation(val_loader, criterion)
@@ -294,7 +288,7 @@ class Exp(object):
                     epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
                 #print("TEST: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Test Loss: {3:.7f} Test Accuracy: {4:.7f}  Test weighted F1: {5:.7f}  Test macro F1 {6:.7f} ".format(
                 #    epoch + 1, train_steps, train_loss, test_loss, test_acc, test_f_w, test_f_macro))
-                log.write("VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} \n".format(
+                epoch_log.write("VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} \n".format(
                     epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
                 #log.write("TEST: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Test Loss: {3:.7f} Test Accuracy: {4:.7f}  Test weighted F1: {5:.7f}  Test macro F1 {6:.7f} \n".format(
                 #    epoch + 1, train_steps, train_loss, test_loss, test_acc, test_f_w, test_f_macro))
@@ -304,29 +298,32 @@ class Exp(object):
                 #    filnal_test_f_m = test_f_macro
                 #    filnal_test_f_w = test_f_w
 
-                early_stopping(vali_loss, self.model, cv_path, vali_f_macro, vali_f_w, log)
+                early_stopping(vali_loss, self.model, cv_path, vali_f_macro, vali_f_w, epoch_log)
                 if early_stopping.early_stop:
                     print("Early stopping")
                     break
-                log.write("----------------------------------------------------------------------------------------\n")
-                log.flush()
+                epoch_log.write("----------------------------------------------------------------------------------------\n")
+                epoch_log.flush()
                 learning_rate_adapter(model_optim,vali_loss)
 
             #self.model  = self.build_model().to(self.device)
 			
+            # rename the best_vali to final_best_vali
+            os.rename(cv_path+'/'+'best_vali.pth', cv_path+'/'+'final_best_vali.pth')
+
             print("Loading the best validation model!")
-            self.model.load_state_dict(torch.load(cv_path+'/'+'best_vali.pth'))
+            self.model.load_state_dict(torch.load(cv_path+'/'+'final_best_vali.pth'))
             #model.eval()
             test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(test_loader, criterion, iter+1)
             print("Final Test Performance : Test Accuracy: {0:.7f}  Test weighted F1: {1:.7f}  Test macro F1 {2:.7f} ".format (test_acc, test_f_w, test_f_macro))
-            log.write("Final Test Performance : Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n\n\n\n\n\n\n\n".format(test_f_w, test_f_macro))
-            log.flush()
+            epoch_log.write("Final Test Performance : Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n\n\n\n\n\n\n\n".format(test_f_w, test_f_macro))
+            epoch_log.flush()
 
-            log_1.write("Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n".format(test_f_w, test_f_macro))
-            log_1.flush()
+            score_log.write("Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n".format(test_f_w, test_f_macro))
+            score_log.flush()
             #torch.save(self.model.state_dict(), os.path.join(cv_path,'last.pth'))
-            log.close()
-            log_1.close()
+            epoch_log.close()
+            score_log.close()
             #best_model_path = cv_path+'/'+'checkpoint.pth'
             #self.model.load_state_dict(torch.load(best_model_path))
 
@@ -417,11 +414,11 @@ class Exp(object):
         f_micro = f1_score(trues, preds, average='micro')
         if index_of_cv:
             cf_matrix = confusion_matrix(trues, preds)
-            with open("{}.npy".format(index_of_cv), 'wb') as f:
-                np.save(f, cf_matrix)
+            #with open("{}.npy".format(index_of_cv), 'wb') as f:
+            #    np.save(f, cf_matrix)
             plt.figure()
             sns.heatmap(cf_matrix, annot=True)
-            plt.savefig("{}.png".format(index_of_cv))
+            #plt.savefig("{}.png".format(index_of_cv))
         self.model.train()
 
         return total_loss,  acc, f_w,  f_macro, f_micro#, f_1

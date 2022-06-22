@@ -36,31 +36,43 @@ class ConvBlock(nn.Module):
 
 
 class DeepConvLSTM(nn.Module):
-    def __init__(self, input_channels, nb_classes):
+    def __init__(self, 
+                 input_shape, 
+                 nb_classes,
+                 filter_scaling_factor,
+                 config):
+                 #nb_conv_blocks         = 2,
+                 #nb_filters             = 64,
+                 #dilation               = 1,
+                 #batch_norm             = False,
+                 #filter_width           = 5,
+                 #nb_layers_lstm         = 1,
+                 #drop_prob              = 0.5,
+                 #nb_units_lstm          = 128):
         """
         DeepConvLSTM model based on architecture suggested by Ordonez and Roggen (https://www.mdpi.com/1424-8220/16/1/115)
         
         """
         super(DeepConvLSTM, self).__init__()
-        self.nb_conv_blocks = 2
-        self.nb_filters = 64
-        self.dilation = 1
-        self.batch_norm = False
-        self.filter_width = 5
-        self.nb_layers_lstm = 2
-        self.drop_prob = 0.5 
-        self.nb_units_lstm = 128
+        self.nb_conv_blocks = config["nb_conv_blocks"]
+        self.nb_filters     = int(filter_scaling_factor*config["nb_filters"])
+        self.dilation       = config["dilation"]
+        self.batch_norm     = bool(config["batch_norm"])
+        self.filter_width   = config["filter_width"]
+        self.nb_layers_lstm = config["nb_layers_lstm"]
+        self.drop_prob      = config["drop_prob"]
+        self.nb_units_lstm  = int(filter_scaling_factor*config["nb_units_lstm"])
         
         
-        self.nb_channels = input_channels
-        self.nb_classes = nb_classes
+        self.nb_channels    = input_shape[3]
+        self.nb_classes     = nb_classes
 
     
         self.conv_blocks = []
 
         for i in range(self.nb_conv_blocks):
             if i == 0:
-                input_filters = 1
+                input_filters = input_shape[1]
             else:
                 input_filters = self.nb_filters
     
@@ -85,8 +97,8 @@ class DeepConvLSTM(nn.Module):
 
     def forward(self, x):
         # reshape data for convolutions
-        B,L,C = x.shape
-        x = x.view(B, 1, L, C)
+        # B,L,C = x.shape
+        # x = x.view(B, 1, L, C)
 
         for i, conv_block in enumerate(self.conv_blocks):
             x = conv_block(x)

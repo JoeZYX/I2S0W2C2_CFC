@@ -151,16 +151,20 @@ class data_set(Dataset):
             #print(sample_x.shape)
 
             if self.args.wavelet_filtering:
-                sample_x = sample_x.T
-                sample_x = np.expand_dims(sample_x,axis=0)
-                sample_x = torch.tensor(sample_x)
-                sample_x = self.Filter_ReplicationPad1d(sample_x)
-                sample_x = sample_x[0]
-                sample_x = sample_x.repeat(1,1,1)[:,:,:,None]
-                sample_x = sample_x.permute([0,3,1,2])
-                sample_x = torch.nn.functional.conv2d(sample_x, self.ScaledFilter, padding='valid')[0,:,:,:self.args.windowsize]
-                #print("sample_x shape ", sample_x.shape)
-                sample_x = sample_x.permute(2,0,1).reshape(self.args.windowsize,-1)
+                data_x = sample_x.T
+                data_x = np.expand_dims(data_x,axis=0)
+                data_x = torch.tensor(data_x)
+                data_x = self.Filter_ReplicationPad1d(data_x)
+                data_x = data_x[0]
+                data_x = data_x.repeat(1,1,1)[:,:,:,None]
+                data_x = data_x.permute([0,3,1,2])
+                data_x = torch.nn.functional.conv2d(data_x, self.ScaledFilter, padding='valid')[0,:,:,:self.args.windowsize]
+ 
+                data_x = data_x.permute(0,2,1)#.reshape(self.args.windowsize,-1)
+                sample_x = np.expand_dims(sample_x,0)
+                sample_x = np.concatenate([sample_x,data_x],axis=0)
+            else:
+                sample_x = np.expand_dims(sample_x,0)
             #print(sample_x.shape)
             return sample_x, sample_y,sample_y
 

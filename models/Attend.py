@@ -86,7 +86,7 @@ class Classifier(nn.Module):
 class FeatureExtractor(nn.Module):
     def __init__(
         self,
-        input_dim,
+        input_shape,
         hidden_dim,
         filter_num,
         filter_size,
@@ -99,7 +99,7 @@ class FeatureExtractor(nn.Module):
     ):
         super(FeatureExtractor, self).__init__()
 
-        self.conv1 = nn.Conv2d(1, filter_num, (filter_size, 1))
+        self.conv1 = nn.Conv2d(input_shape[1], filter_num, (filter_size, 1))
         self.conv2 = nn.Conv2d(filter_num, filter_num, (filter_size, 1))
         self.conv3 = nn.Conv2d(filter_num, filter_num, (filter_size, 1))
         self.conv4 = nn.Conv2d(filter_num, filter_num, (filter_size, 1))
@@ -109,7 +109,7 @@ class FeatureExtractor(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         self.rnn = nn.GRU(
-            filter_num * input_dim,
+            filter_num * input_shape[3],
             hidden_dim,
             enc_num_layers,
             bidirectional=enc_is_bidirectional,
@@ -120,7 +120,7 @@ class FeatureExtractor(nn.Module):
         self.sa = SelfAttention(filter_num, sa_div)
 
     def forward(self, x):
-        x = x.unsqueeze(1)
+        #x = x.unsqueeze(1)
         x = self.activation(self.conv1(x))
         x = self.activation(self.conv2(x))
         x = self.activation(self.conv3(x))
@@ -145,8 +145,9 @@ class FeatureExtractor(nn.Module):
 class AttendDiscriminate(nn.Module):
     def __init__(
         self,
-        input_dim,
+        input_shape,
         num_class,
+        filter_scaling_factor=1,
         hidden_dim = 128,
         filter_num = 64,
         filter_size = 5,
@@ -160,12 +161,13 @@ class AttendDiscriminate(nn.Module):
     ):
         super(AttendDiscriminate, self).__init__()
 
-
+        hidden_dim = int(filter_scaling_factor*hidden_dim)
+        filter_num = int(filter_scaling_factor*filter_num)
         self.hidden_dim = hidden_dim
 
 
         self.fe = FeatureExtractor(
-            input_dim,
+            input_shape,
             hidden_dim,
             filter_num,
             filter_size,
