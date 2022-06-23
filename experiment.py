@@ -222,7 +222,7 @@ class Exp(object):
                 #print(".....")
                 for i, (batch_x1,batch_x2,batch_y) in enumerate(train_loader):
 
-                    model_optim.zero_grad()
+
 
                     if "cross" in self.args.model_type:
                         batch_x1 = batch_x1.double().to(self.device)
@@ -252,22 +252,21 @@ class Exp(object):
                     else:
                         loss = criterion(outputs, batch_y)
 
-                    #if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
-                    #    reg_loss = 0
-                    #    for name,parameter in self.model.named_parameters():
-                    #        if "gamma" in name:
-                    #            reg_loss += torch.sum(torch.abs(parameter))
+                    if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
+                        reg_loss = 0
+                        for name,parameter in self.model.named_parameters():
+                            if "gamma" in name:
+                                reg_loss += torch.sum(torch.abs(parameter))
 
-                    #    loss = loss + self.args.regulatization_tradeoff*reg_loss
+                        loss = loss + self.args.regulatization_tradeoff*reg_loss
 
 
                     train_loss.append(loss.item())
 
+                    model_optim.zero_grad()
                     loss.backward()
-
-                    if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
-                        self.update_gamma()
-
+                    #if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
+                    #    self.update_gamma()
                     model_optim.step()
 
                     #preds.extend(list(np.argmax(outputs.detach().cpu().numpy(),axis=1)))

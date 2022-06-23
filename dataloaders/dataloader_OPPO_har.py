@@ -34,6 +34,62 @@ class Opportunity_HAR_DATA(BASE_DATA):
         # =============================================================
         # 1-37, 38-46, 51-59, 64-72, 77-85, 90-98, 103-134, 244, 250.
         # 0 milisconds
+        all_columns = ["timestamp",
+                       # Position : RKN
+                       "acc_x_RKN", "acc_y_RKN", "acc_z_RKN", 
+                       # Position : HIP			   
+                       "acc_x_HIP", "acc_y_HIP", "acc_z_HIP",
+                       # Position : LUA^	
+                       "acc_x_LUA^", "acc_y_LUA^", "acc_z_LUA^",
+                       # Position : RUA-
+                       "acc_x_RUA-", "acc_y_RUA-", "acc_z_RUA-",
+                       # Position : LH
+                       "acc_x_LH", "acc_y_LH", "acc_z_LH",
+                       # Position : BACK
+                       "acc_x_BACK", "acc_y_BACK", "acc_z_BACK",
+                       # Position : RKN-
+                       "acc_x_RKN-", "acc_y_RKN-", "acc_z_RKN-", 
+                       # Position : RWR
+                       "acc_x_RWR", "acc_y_RWR", "acc_z_RWR",
+                       # Position : RUA^
+                       "acc_x_RUA^", "acc_y_RUA^", "acc_z_RUA^",
+                       # Position : LUA-
+                       "acc_x_LUA-", "acc_y_LUA-", "acc_z_LUA-", 
+                       # Position : LWR
+                       "acc_x_LWR", "acc_y_LWR", "acc_z_LWR",
+                       # Position : RH
+                       "acc_x_RH", "acc_y_RH", "acc_z_RH",
+                       # Position : IBack
+                       "acc_x_IBack", "acc_y_IBack", "acc_z_IBack", "gyro_x_IBack", "gyro_y_IBack", "gyro_z_IBack","magnetic_x_IBack", "magnetic_y_IBack", "magnetic_z_IBack",
+                       "Quaternion_1_IBack", "Quaternion_2_IBack", "Quaternion_3_IBack", "Quaternion_4_IBack", 
+                       # Position : IRUA
+                       "acc_x_IRUA", "acc_y_IRUA", "acc_z_IRUA", "gyro_x_IRUA", "gyro_y_IRUA", "gyro_z_IRUA","magnetic_x_IRUA", "magnetic_y_IRUA", "magnetic_z_IRUA",
+                       "Quaternion_1_IRUA", "Quaternion_2_IRUA", "Quaternion_3_IRUA", "Quaternion_4_IRUA", 
+                       # Position : IRLA
+                       "acc_x_IRLA", "acc_y_IRLA", "acc_z_IRLA", "gyro_x_IRLA", "gyro_y_IRLA", "gyro_z_IRLA","magnetic_x_IRLA", "magnetic_y_IRLA", "magnetic_z_IRLA",
+                       "Quaternion_1_IRLA", "Quaternion_2_IRLA", "Quaternion_3_IRLA", "Quaternion_4_IRLA", 
+                       # Position : ILUA
+                       "acc_x_ILUA", "acc_y_ILUA", "acc_z_ILUA", "gyro_x_ILUA", "gyro_y_ILUA", "gyro_z_ILUA","magnetic_x_ILUA", "magnetic_y_ILUA", "magnetic_z_ILUA",
+                       "Quaternion_1_ILUA", "Quaternion_2_ILUA", "Quaternion_3_ILUA", "Quaternion_4_ILUA", 
+                       # Position : ILLA
+                       "acc_x_ILLA", "acc_y_ILLA", "acc_z_ILLA", "gyro_x_ILLA", "gyro_y_ILLA", "gyro_z_ILLA","magnetic_x_ILLA", "magnetic_y_ILLA", "magnetic_z_ILLA",
+                       "Quaternion_1_ILLA", "Quaternion_2_ILLA", "Quaternion_3_ILLA", "Quaternion_4_ILLA", 
+                       # Position : LSHOE
+                       "EU_x_LSHOE",  "EU_y_LSHOE", "EU_z_LSHOE", "acc_x_Nav_LSHOE", "acc_y_Nav_LSHOE", "acc_z_Nav_LSHOE", "acc_x_body_LSHOE", "acc_y_body_LSHOE", "acc_z_body_LSHOE",
+                       "AngVel_x_body_LSHOE","AngVel_y_body_LSHOE","AngVel_z_body_LSHOE","AngVel_x_Nav_LSHOE","AngVel_y_Nav_LSHOE","AngVel_z_Nav_LSHOE","Compass_none_LSHOE",
+                       # Position : RSHOE
+                       "EU_x_RSHOE",  "EU_y_RSHOE", "EU_z_RSHOE", "acc_x_Nav_RSHOE", "acc_y_Nav_RSHOE", "acc_z_Nav_RSHOE", "acc_x_body_RSHOE", "acc_y_body_RSHOE", "acc_z_body_RSHOE",
+                       "AngVel_x_body_RSHOE","AngVel_y_body_RSHOE","AngVel_z_body_RSHOE","AngVel_x_Nav_RSHOE","AngVel_y_Nav_RSHOE","AngVel_z_Nav_RSHOE","Compass_none_RSHOE",
+                       # Position : Cup  + 。。。。。
+                       "drop", "drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop",
+                       "drop", "drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop",
+                       "drop", "drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop",
+                       "drop", "drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop",
+                       "drop", "drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop","drop",
+                       "drop", "drop","drop","drop","drop","drop","drop","drop","drop",
+                       # Label
+                       "Locomotion","HL_Activity","LL_Left_Arm","LL_Left_Arm_Object","LL_Right_Arm","ML_Both_Arms","activity_id"]
+
         self.used_cols = [#1,  2,   3, # Accelerometer RKN^ 
                           #4,  5,   6, # Accelerometer HIP
                           #7,  8,   9, # Accelerometer LUA^ 
@@ -56,8 +112,26 @@ class Opportunity_HAR_DATA(BASE_DATA):
                           249  # Label
                          ]
 
-        col_names         = ["dim_{}".format(i) for i in range(len(self.used_cols)-1)]
-        self.col_names    =  col_names + ["activity_id"]
+
+        self.col_names    =  []
+        for index in self.used_cols:
+            self.col_names.append(all_columns[index])
+        # These two variables represent whether all sensors can be filtered according to position and sensor type
+        # pos_filter ------- >  filter according to position
+        # sensor_filter ----->  filter according to the sensor type
+        self.pos_filter         = None
+        self.sensor_filter      = ["acc","gyro","magnetic","EU","AngVel"]
+
+
+        # selected_cols will be updated according to user settings. User have to set -- args.pos_select, args.sensor_select---
+        self.selected_cols      = None
+        # Filtering channels according to the Position
+        self.selected_cols      = self.Sensor_filter_acoording_to_pos_and_type(args.pos_select, self.pos_filter, self.col_names, "position")
+        # Filtering channels according to the Sensor Type
+        if self.selected_cols is None:
+            self.selected_cols  = self.Sensor_filter_acoording_to_pos_and_type(args.sensor_select, self.sensor_filter, self.col_names, "Sensor Type")
+        else:
+            self.selected_cols  = self.Sensor_filter_acoording_to_pos_and_type(args.sensor_select, self.sensor_filter, self.selected_cols, "Sensor Type")
 
         self.label_map = [(0,      'Other'),
                           (406516, 'Open Door 1'),
@@ -125,6 +199,7 @@ class Opportunity_HAR_DATA(BASE_DATA):
 	 
         file_list = os.listdir(root_path)
         file_list = [file for file in file_list if file[-3:]=="dat"] # in total , it should be 24
+
         assert len(file_list) == 24
 
         df_dict = {}
@@ -151,8 +226,13 @@ class Opportunity_HAR_DATA(BASE_DATA):
         # all data
         df_all = pd.concat(df_dict)
         df_all = df_all.set_index('sub_id')
+
         # reorder the columns as sensor1, sensor2... sensorn, sub, activity_id
-        df_all = df_all[self.col_names[:-1]+["sub"]+["activity_id"]]
+        if self.selected_cols:
+            df_all = df_all[self.selected_cols+["sub"]+["activity_id"]]
+        else:
+            df_all = df_all[self.col_names[:-1]+["sub"]+["activity_id"]]
+
         # label transformation
         df_all["activity_id"] = df_all["activity_id"].map(self.labelToId)
 

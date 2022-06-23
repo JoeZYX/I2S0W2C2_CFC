@@ -83,30 +83,28 @@ class BASE_DATA():
 
         # ======================= Differencing the Data =================================
         if self.difference:
+            print("Channel Augmentation : Differencing")
             self.data_x = self.differencing(self.data_x.set_index('sub_id').copy())
 
         # data_x : sub_id, sensor_1, sensor_2,..., sensor_n , sub
 
-        #if self.wavelet_filtering:
-        #    SelectedWavelet = PrepareWavelets(K=self.number_wavelet_filtering, length=self.windowsize)
-        #    self.ScaledFilter = FiltersExtention(SelectedWavelet)
-        #    if self.windowsize%2==1:
-        #        self.Filter_ReplicationPad1d = torch.nn.ReplicationPad1d(int((self.windowsize-1)/2))
-        #    else:
-        #        self.Filter_ReplicationPad1d = torch.nn.ReplicationPad1d(int(self.windowsize/2))
 
         # ======================== Filtering the Data =========================================
         if self.filtering:
+            print("Channel Augmentation : Acc Gyro Filtering")
             self.data_x = self.Sensor_data_noise_grav_filtering(self.data_x.set_index('sub_id').copy())
 
         # ======================== Mag the Data =====================================
-        self.data_x.columns , columns_groups = self.regroup_and_reindex_all_cols(self.data_x.set_index('sub_id').copy())
-        if self.magnitude:        
+
+        if self.magnitude:
+            print("Channel Augmentation : Magnitute Calculating for acc and Gyro")
+            self.data_x.columns , columns_groups = self.regroup_and_reindex_all_cols(self.data_x.set_index('sub_id').copy())
+
             temp_columns = list(self.data_x.columns[1:-1])
             for cols in columns_groups:
                 if len(cols)== 3:
                     col1, col2, col3 = cols
-                    col = "_".join(col1.split("_")[:-2])+"_mag"
+                    col = "_".join(col1.split("_")[:-1])+"_mag"
                     temp_columns.append(col)
                     self.data_x[col] = mag_3_signals(np.array(self.data_x[col1]),
                                                      np.array(self.data_x[col2]),
@@ -312,37 +310,40 @@ class BASE_DATA():
            index=sub_id
         """
         all_columns = list(df.columns)[:-1]
-        rest_columns = list(set(all_columns) - set(self.col_names))
+        #rest_columns = list(set(all_columns) - set(self.col_names))
 
         filtered_data = []
         for sub_id in df.index.unique():
-            temp = df.loc[sub_id,self.col_names]
+            temp = df.loc[sub_id,all_columns]
             filtered_temp = pd.DataFrame()
 
             for col in temp.columns:
                 t_signal=np.array(temp[col]) # copie the signal values in 1D numpy array
 
-                if 'acc' in col: 
+                if 'acc' in col and "diff" not in col: 
                     # the 2nd output DC_component is the gravity_acc
                     # The 3rd one is the body_component which in this case the body_acc
                     grav_acc,body_acc=components_selection_one_signal(t_signal,freq1,freq2,self.freq) # apply components selection
 
                     filtered_temp[col]=body_acc
-                    filtered_temp['grav_'+col]= grav_acc
+                    filtered_temp['grav'+col]= grav_acc
         
-                elif 'gyro' in col: 
+                elif 'gyro' in col and "diff" not in col: 
             
                     # The 3rd output of components_selection is the body_component which in this case the body_gyro component
                     _,        body_gyro=components_selection_one_signal(t_signal,freq1,freq2,self.freq)  # apply components selection
                     filtered_temp[col]=body_gyro # t_body_acc storing with the appropriate axis selected 
+                else: 
+            
+                    filtered_temp[col] = t_signal
 
-            filtered_temp = filtered_temp[sorted(list(filtered_temp.columns))]
+            #filtered_temp = filtered_temp[sorted(list(filtered_temp.columns))]
             filtered_temp.index = temp.index
             filtered_data.append(filtered_temp)
 
         filtered_data = pd.concat(filtered_data)
-        filtered_data = pd.concat([df.loc[:,rest_columns], filtered_data], axis=1)
-        filtered_data = filtered_data[sorted(list(filtered_data.columns))]
+        #filtered_data = pd.concat([df.loc[:,rest_columns], filtered_data], axis=1)
+        #filtered_data = filtered_data[sorted(list(filtered_data.columns))]
         filtered_data = pd.concat([filtered_data, df.iloc[:,-1]], axis=1)
 
         return filtered_data.reset_index()
@@ -370,7 +371,7 @@ class BASE_DATA():
         diff_data.fillna(method ="backfill",inplace=True)
 
         data = pd.concat([df.iloc[:,:-1],  diff_data], axis=1)
-        data = data[sorted(list(data.columns))]
+        #data = data[sorted(list(data.columns))]
         data = pd.concat([data, df.iloc[:,-1]], axis=1)
 
         return data.reset_index()
@@ -590,9 +591,10 @@ class BASE_DATA():
                 sub_groups= []
                 for col in cols:
                     if col.split("_")[0]==col_begin:
-                        columns_mapping[col] = col[:-2]+"_"+str(index)
-                        sub_groups.append(col[:-2]+"_"+str(index))
+                        columns_mapping[col] = "_".join(col.split("_")[:-1])+"_"+str(index)
+                        sub_groups.append("_".join(col.split("_")[:-1])+"_"+str(index))
                 index= index+1
-                columns_groups.append(sub_groups)
+                if col_begin in ["acc","gyro","gravacc"]:
+                    columns_groups.append(sub_groups)
         columns = ["sub_id"]+[columns_mapping[col] for col in df.columns[:-1]] + ["sub"]
         return columns,columns_groups

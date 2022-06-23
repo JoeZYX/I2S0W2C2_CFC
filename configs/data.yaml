@@ -3,6 +3,22 @@ hapt:
   sampling_freq: 50
   num_classes: 12
   num_channels: 6
+  window_seconds: 2.56
+
+oppo:
+  filename: "Opportunity_Dataset/dataset"
+  sampling_freq: 30
+  num_classes: 18
+  num_channels: 77
+  window_seconds: 1
+
+rw:
+  filename: "RWhar_Dataset"
+  sampling_freq: 50
+  num_classes: 8
+  num_channels: 21
+  window_seconds: 2.56
+
 ear:
   filename: "EAR_Dataset"
   sampling_freq: 20
