@@ -74,7 +74,7 @@ class REAL_WORLD_HAR_DATA(BASE_DATA):
         self.exp_mode     = args.exp_mode
         self.split_tag = "sub"
 
-        self.LOCV_keys = [1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15]
+        self.LOCV_keys = [[1],  [2],  [3],  [4],  [5],  [6],  [7],  [8],  [9], [10], [11], [12], [13], [14], [15]]
         self.all_keys = [1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15]
         self.sub_ids_of_each_sub = {}
 
