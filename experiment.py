@@ -189,7 +189,6 @@ class Exp(object):
 
 
 
-            #print("After update the train test split , the class weight :" , dataset.act_weights)
             # get the loader of train val test
             train_loader = self._get_data(dataset, flag = 'train', weighted_sampler = self.args.weighted_sampler )
             val_loader = self._get_data(dataset, flag = 'vali', weighted_sampler = self.args.weighted_sampler)
@@ -199,27 +198,23 @@ class Exp(object):
 
             early_stopping        = EarlyStopping(patience=self.args.early_stop_patience, verbose=True)
             learning_rate_adapter = adjust_learning_rate_class(self.args,True)
-
             model_optim = self._select_optimizer()
+
             #if self.args.weighted == True:
             #    criterion =  nn.CrossEntropyLoss(reduction="mean",weight=class_weights).to(self.device)#self._select_criterion()
             #else:
             #    criterion =  nn.CrossEntropyLoss(reduction="mean").to(self.device)#self._select_criterion()
             criterion =  nn.CrossEntropyLoss(reduction="mean").to(self.device)
-            val_loss_min = np.Inf
-            filnal_test_f_w = 0
-            filnal_test_f_m = 0
-			
-			
-			
+
+
+
             for epoch in range(self.args.train_epochs):
                 train_loss = []
-                #preds = []
-                #trues = []
+
                 self.model.train()
 
                 epoch_time = time.time()
-                #print(".....")
+
                 for i, (batch_x1,batch_x2,batch_y) in enumerate(train_loader):
 
 
@@ -265,37 +260,23 @@ class Exp(object):
 
                     model_optim.zero_grad()
                     loss.backward()
-                    #if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
-                    #    self.update_gamma()
                     model_optim.step()
 
-                    #preds.extend(list(np.argmax(outputs.detach().cpu().numpy(),axis=1)))
-                    #trues.extend(list(batch_y.detach().cpu().numpy()))   
+
 
                 print("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
                 epoch_log.write("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
                 epoch_log.write("\n")
-                train_loss = np.average(train_loss)
-                #train_acc_1 = accuracy_score(preds,trues)
-                vali_loss , vali_acc, vali_f_w,  vali_f_macro,  vali_f_micro = self.validation(val_loader, criterion)
-                #test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(test_loader, criterion)
-                #_         , train_acc,       _,         _ = self.validation(train_loader, criterion)
 
-                #print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Train Accuracy {3:.7f} Vali Loss: {4:.7f} Vali Accuracy: {5:.7f}  Vali weighted F1: {6:.7f}  Vali macro F1 {7:.7f}".format(
-                #    epoch + 1, train_steps, train_loss, train_acc, vali_loss, vali_acc, vali_f_w, vali_f_m))
+                train_loss = np.average(train_loss)
+                vali_loss , vali_acc, vali_f_w,  vali_f_macro,  vali_f_micro = self.validation(self.model, val_loader, criterion)
+
                 print("VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} ".format(
                     epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
-                #print("TEST: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Test Loss: {3:.7f} Test Accuracy: {4:.7f}  Test weighted F1: {5:.7f}  Test macro F1 {6:.7f} ".format(
-                #    epoch + 1, train_steps, train_loss, test_loss, test_acc, test_f_w, test_f_macro))
+
                 epoch_log.write("VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} \n".format(
                     epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
-                #log.write("TEST: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Test Loss: {3:.7f} Test Accuracy: {4:.7f}  Test weighted F1: {5:.7f}  Test macro F1 {6:.7f} \n".format(
-                #    epoch + 1, train_steps, train_loss, test_loss, test_acc, test_f_w, test_f_macro))
 
-                #if vali_loss<=val_loss_min:
-                #    val_loss_min = vali_loss
-                #    filnal_test_f_m = test_f_macro
-                #    filnal_test_f_w = test_f_w
 
                 early_stopping(vali_loss, self.model, cv_path, vali_f_macro, vali_f_w, epoch_log)
                 if early_stopping.early_stop:
@@ -305,7 +286,7 @@ class Exp(object):
                 epoch_log.flush()
                 learning_rate_adapter(model_optim,vali_loss)
 
-            #self.model  = self.build_model().to(self.device)
+
 			
             # rename the best_vali to final_best_vali
             os.rename(cv_path+'/'+'best_vali.pth', cv_path+'/'+'final_best_vali.pth')
@@ -313,18 +294,121 @@ class Exp(object):
             print("Loading the best validation model!")
             self.model.load_state_dict(torch.load(cv_path+'/'+'final_best_vali.pth'))
             #model.eval()
-            test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(test_loader, criterion, iter+1)
+            test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(self.model, test_loader, criterion, iter+1)
             print("Final Test Performance : Test Accuracy: {0:.7f}  Test weighted F1: {1:.7f}  Test macro F1 {2:.7f} ".format (test_acc, test_f_w, test_f_macro))
             epoch_log.write("Final Test Performance : Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n\n\n\n\n\n\n\n".format(test_f_w, test_f_macro))
             epoch_log.flush()
 
             score_log.write("Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n".format(test_f_w, test_f_macro))
             score_log.flush()
-            #torch.save(self.model.state_dict(), os.path.join(cv_path,'last.pth'))
+
             epoch_log.close()
             score_log.close()
-            #best_model_path = cv_path+'/'+'checkpoint.pth'
-            #self.model.load_state_dict(torch.load(best_model_path))
+
+            # ------------------------------ code for  regularization and fine tuning -----------------------------------------------------------------
+
+            if self.args.wavelet_filtering_finetuning:
+                # thre_index : selected number
+                epoch_log = open(epoch_log_file_name, "a")
+                epoch_log.write("----------------------------------------------------------------------------------------\n")
+                epoch_log.write("--------------------------------------Fine Tuning-----------------------------------------\n")
+                epoch_log.write("----------------------------------------------------------------------------------------\n")
+
+                finetuned_score_log_file_name = os.path.join(self.path, "finetuned_score.txt")
+                finetuned_score_log = open(finetuned_score_log_file_name, "a")
+
+                thre_index             = int(self.args.f_in * self.args.wavelet_filtering_finetuning_percent)
+                gamma_weight           = self.model.gamma.squeeze().abs().clone()
+                sorted_gamma_weight, i = torch.sort(gamma_weight)
+                threshold              = sorted_gamma_weight[thre_index]
+                mask                   = gamma_weight.data.gt(threshold).float().to(self.device)
+                idx0                   = np.squeeze(np.argwhere(np.asarray(mask.cpu().numpy())))
+                # build the new model
+                new_model              = model_builder(self.args, input_f_channel = thre_index)
+                print("------------Fine Tuning  : ", self.args.f_in-thre_index,"  will be pruned   -----------------------------------------")
+                print("old model Parameter :", self.model_size)
+                print("pruned model Parameter :", np.sum([para.numel() for para in new_model.parameters()]))
+                print("----------------------------------------------------------------------------------------")
+                # copy the weights
+                flag_channel_selection = False
+                for n,p in new_model.named_parameters():
+
+                    if n == "gamma" or flag_channel_selection:
+                        p.data = self.model.state_dict()[n].data[:, idx0.tolist(),:,:].clone()
+                        if n == "gamma":
+                            # set for the next channel 
+                            flag_channel_selection = True
+                        else:
+                            flag_channel_selection = False
+                    else:
+                         p.data = self.model.state_dict()[n].data.clone()
+
+                early_stopping        = EarlyStopping(patience=5, verbose=True)
+                learning_rate_adapter = adjust_learning_rate_class(self.args,True)
+                model_optim           = optim.Adam(new_model.parameters(), lr=0.0001)
+                criterion             = nn.CrossEntropyLoss(reduction="mean").to(self.device)
+                for epoch in range(self.args.train_epochs):
+                    train_loss = []
+                    new_model.train()
+                    epoch_time = time.time()
+
+                    for i, (batch_x1,batch_x2,batch_y) in enumerate(train_loader):
+                        batch_x1 = batch_x1[:, idx0.tolist(),:,:].double().to(self.device)
+
+                        batch_y = batch_y.long().to(self.device)
+                        outputs = new_model(batch_x1)
+
+                        loss = criterion(outputs, batch_y)
+
+                        train_loss.append(loss.item())
+
+                        model_optim.zero_grad()
+                        loss.backward()
+                        model_optim.step()
+
+                    print("Fine Tuning Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
+                    epoch_log.write("Fine Tuning Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
+                    epoch_log.write("\n")
+
+                    train_loss = np.average(train_loss)
+                    vali_loss , vali_acc, vali_f_w,  vali_f_macro,  vali_f_micro = self.validation(new_model, val_loader, criterion, selected_index=idx0)
+
+                    print("Fine Tuning VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} ".format(
+                        epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
+
+                    epoch_log.write("Fine Tuning VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} \n".format(
+                        epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
+
+
+                    early_stopping(vali_loss, new_model, cv_path, vali_f_macro, vali_f_w, epoch_log)
+                    if early_stopping.early_stop:
+                        print("Early stopping")
+                        break
+                    epoch_log.write("----------------------------------------------------------------------------------------\n")
+                    epoch_log.flush()
+                    learning_rate_adapter(model_optim,vali_loss)
+                # rename the best_vali to final_best_vali
+                os.rename(cv_path+'/'+'best_vali.pth', cv_path+'/'+'final_finetuned_best_vali.pth')
+
+                print("Loading the best finetuned validation model!")
+                new_model.load_state_dict(torch.load(cv_path+'/'+'final_finetuned_best_vali.pth'))
+
+                test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(new_model, test_loader, criterion, selected_index=idx0)
+                print("Fine Tuning Final Test Performance : Test Accuracy: {0:.7f}  Test weighted F1: {1:.7f}  Test macro F1 {2:.7f} ".format (test_acc, test_f_w, test_f_macro))
+                epoch_log.write("Final Test Performance : Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n\n\n\n\n\n\n\n".format(test_f_w, test_f_macro))
+                epoch_log.flush()
+
+                finetuned_score_log.write("Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n".format(test_f_w, test_f_macro))
+                finetuned_score_log.flush()
+
+                epoch_log.close()
+                finetuned_score_log.close()
+
+
+
+
+
+
 
     def prediction_test(self):
         assert self.args.exp_mode == "Given"
@@ -368,8 +452,8 @@ class Exp(object):
 
 
 
-    def validation(self, data_loader, criterion, index_of_cv=None):
-        self.model.eval()
+    def validation(self, model, data_loader, criterion, index_of_cv=None, selected_index = None):
+        model.eval()
         total_loss = []
         preds = []
         trues = []
@@ -382,18 +466,21 @@ class Exp(object):
                     batch_y = batch_y.long().to(self.device)
                     # model prediction
                     if self.args.output_attention:
-                        outputs = self.model(batch_x1,batch_x2)[0]
+                        outputs = model(batch_x1,batch_x2)[0]
                     else:
-                        outputs = self.model(batch_x1,batch_x2)
+                        outputs = model(batch_x1,batch_x2)
                 else:
-                    batch_x1 = batch_x1.double().to(self.device)
+                    if selected_index is None:
+                        batch_x1 = batch_x1.double().to(self.device)
+                    else:
+                        batch_x1 = batch_x1[:, selected_index.tolist(),:,:].double().to(self.device)
                     batch_y = batch_y.long().to(self.device)
 
                     # model prediction
                     if self.args.output_attention:
-                        outputs = self.model(batch_x1)[0]
+                        outputs = model(batch_x1)[0]
                     else:
-                        outputs = self.model(batch_x1)
+                        outputs = model(batch_x1)
 
 
                 pred = outputs.detach()#.cpu()
@@ -418,7 +505,7 @@ class Exp(object):
             plt.figure()
             sns.heatmap(cf_matrix, annot=True)
             #plt.savefig("{}.png".format(index_of_cv))
-        self.model.train()
+        model.train()
 
         return total_loss,  acc, f_w,  f_macro, f_micro#, f_1
 

@@ -17,16 +17,18 @@ class model_builder(nn.Module):
     """
     
     """
-    def __init__(self, args):
+    def __init__(self, args, input_f_channel = None):
         super(model_builder, self).__init__()
 
         self.args = args
-
-
+        if input_f_channel is None:
+            f_in  = self.args.f_in
+        else:
+            f_in  = input_f_channel
 
         if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
             print("Wavelet Filtering Regularization")
-            shape      = (1, self.args.f_in, 1, 1)
+            shape      = (1, f_in, 1, 1)
             self.register_parameter('gamma' , nn.Parameter(torch.ones(shape)))
             # self.gamma = nn.Parameter(torch.ones(shape))
             #self.register_buff
@@ -38,7 +40,7 @@ class model_builder(nn.Module):
 
 
         if self.args.model_type == "tinyhar":
-            self.model  = TinyHAR_Model((1,self.args.f_in, self.args.input_length, self.args.c_in ), 
+            self.model  = TinyHAR_Model((1,f_in, self.args.input_length, self.args.c_in ), 
                                          self.args.num_classes,
                                          cross_channel_interaction_type = self.args.cross_channel_interaction_type,    # attn  transformer  identity
                                          cross_channel_aggregation_type = self.args.cross_channel_aggregation_type,  # filter  naive  FC
@@ -47,13 +49,13 @@ class model_builder(nn.Module):
             print("Build the TinyHAR model!")
 
         elif self.args.model_type == "attend":
-            self.model  = AttendDiscriminate((1,self.args.f_in, self.args.input_length, self.args.c_in ), 
+            self.model  = AttendDiscriminate((1,f_in, self.args.input_length, self.args.c_in ), 
                                              self.args.num_classes,
                                              self.args.filter_scaling_factor)
             print("Build the AttendDiscriminate model!")
 
         elif self.args.model_type == "deepconvlstm_attn":
-            self.model  = DeepConvLSTM_ATTN((1,self.args.f_in, self.args.input_length, self.args.c_in ), 
+            self.model  = DeepConvLSTM_ATTN((1,f_in, self.args.input_length, self.args.c_in ), 
                                             self.args.num_classes,
                                             self.args.filter_scaling_factor)
             print("Build the deepconvlstm_attn model!")
@@ -61,7 +63,7 @@ class model_builder(nn.Module):
         elif self.args.model_type == "deepconvlstm":
             config_file = open('../../configs/model.yaml', mode='r')
             config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm"]
-            self.model  = DeepConvLSTM((1,self.args.f_in, self.args.input_length, self.args.c_in ), 
+            self.model  = DeepConvLSTM((1,f_in, self.args.input_length, self.args.c_in ), 
                                        self.args.num_classes,
                                        self.args.filter_scaling_factor,
                                        config)
