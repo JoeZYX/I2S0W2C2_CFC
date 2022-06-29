@@ -146,57 +146,12 @@ class Exp(object):
         num_of_cv = dataset.num_of_cv
 
 
-        # ---------------- check the runned cd ------------------
-        files = os.listdir(self.path)
-        files = [file for file in files if "cv" in file]
-        cv_skip_number = None
-        for index in range(len(files)):
-            folder = os.path.join(self.path,"cv_{}".format(index))
-            file_in_folder = os.listdir(folder)
-            for file in file_in_folder:
-                if self.args.wavelet_filtering_finetuning:
-                    if "final_finetuned_best_vali" in file:
-                        cv_skip_number = index
-                        break
-                else:
-                    if "final_best_vali" in file:
-                        cv_skip_number = index
-                        break
-
         for iter in range(num_of_cv):
             print("================ the {} th CV Experiment ================ ".format(iter))
 	
             dataset.update_train_val_test_keys()
 
-            if self.args.exp_mode in ["LOCV","SOCV"] and cv_skip_number is not None:
-                if iter<=cv_skip_number:
-                    print("================Skip the {} CV Experiment================".format(iter))
-                    continue
-
             cv_path = os.path.join(self.path,"cv_{}".format(iter))
-            if not os.path.exists(cv_path):
-                os.makedirs(cv_path)
-            else:
-                shutil.rmtree(cv_path)
-                os.makedirs(cv_path)
-
-  
-            epoch_log_file_name = os.path.join(cv_path, "epoch_log.txt")
-            if os.path.exists(epoch_log_file_name):
-                os.remove(epoch_log_file_name)
-
-
-            epoch_log = open(epoch_log_file_name, "a")
-            score_log = open(score_log_file_name, "a")
-
-
-            print("================ Build the model ================ ")	
-            if self.args.mixup:
-                print(" Using Mixup Training")				
-            self.model  = self.build_model().to(self.device)
-
-
-
             # get the loader of train val test
             train_loader = self._get_data(dataset, flag = 'train', weighted_sampler = self.args.weighted_sampler )
             val_loader = self._get_data(dataset, flag = 'vali', weighted_sampler = self.args.weighted_sampler)
@@ -204,169 +159,101 @@ class Exp(object):
             #class_weights=torch.tensor(dataset.act_weights,dtype=torch.double).to(self.device)
             train_steps = len(train_loader)
 
-            early_stopping        = EarlyStopping(patience=self.args.early_stop_patience, verbose=True)
-            learning_rate_adapter = adjust_learning_rate_class(self.args,True)
-            model_optim = self._select_optimizer()
+            if not os.path.exists(cv_path):
+                os.makedirs(cv_path)
+                skip_train = False
+                skip_finetuning = False
+            else:
+                file_in_folder = os.listdir(cv_path)
+                if 'final_best_vali.pth' in file_in_folder:
+                    skip_train = True
+                else:
+                    skip_train = False
 
-            #if self.args.weighted == True:
-            #    criterion =  nn.CrossEntropyLoss(reduction="mean",weight=class_weights).to(self.device)#self._select_criterion()
-            #else:
-            #    criterion =  nn.CrossEntropyLoss(reduction="mean").to(self.device)#self._select_criterion()
-            criterion =  nn.CrossEntropyLoss(reduction="mean").to(self.device)
-
-
-
-            for epoch in range(self.args.train_epochs):
-                train_loss = []
-
-                self.model.train()
-
-                epoch_time = time.time()
-
-                for i, (batch_x1,batch_x2,batch_y) in enumerate(train_loader):
+                if 'final_finetuned_best_vali.pth' in file_in_folder:
+                    skip_finetuning = True
+                else:
+                    skip_finetuning = False
 
 
+            epoch_log_file_name = os.path.join(cv_path, "epoch_log.txt")
 
-                    if "cross" in self.args.model_type:
-                        batch_x1 = batch_x1.double().to(self.device)
-                        batch_x2 = batch_x2.double().to(self.device)
-                        batch_y = batch_y.long().to(self.device)
-                        # model prediction
-                        if self.args.output_attention:
-                            outputs = self.model(batch_x1,batch_x2)[0]
-                        else:
-                            outputs = self.model(batch_x1,batch_x2)
-                    else:
-                        batch_x1 = batch_x1.double().to(self.device)
-                        batch_y = batch_y.long().to(self.device)
+            if skip_train:
+                print("================Skip the {} CV Experiment================".format(iter))
+            else:
 
-                        if self.args.mixup:
-                            batch_x1, batch_y = mixup_data(batch_x1, batch_y, self.args.alpha)
-
-                        # model prediction
-                        if self.args.output_attention:
-                            outputs = self.model(batch_x1)[0]
-                        else:
-                            outputs = self.model(batch_x1)
-
-                    if self.args.mixup:
-                        criterion = MixUpLoss(criterion)
-                        loss = criterion(outputs, batch_y)
-                    else:
-                        loss = criterion(outputs, batch_y)
-
-                    if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
-                        reg_loss = 0
-                        for name,parameter in self.model.named_parameters():
-                            if "gamma" in name:
-                                reg_loss += torch.sum(torch.abs(parameter))
-
-                        loss = loss + self.args.regulatization_tradeoff*reg_loss
+                if os.path.exists(epoch_log_file_name):
+                    os.remove(epoch_log_file_name)
 
 
-                    train_loss.append(loss.item())
-
-                    model_optim.zero_grad()
-                    loss.backward()
-                    model_optim.step()
-
-
-
-                print("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
-                epoch_log.write("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
-                epoch_log.write("\n")
-
-                train_loss = np.average(train_loss)
-                vali_loss , vali_acc, vali_f_w,  vali_f_macro,  vali_f_micro = self.validation(self.model, val_loader, criterion)
-
-                print("VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} ".format(
-                    epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
-
-                epoch_log.write("VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} \n".format(
-                    epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
-
-
-                early_stopping(vali_loss, self.model, cv_path, vali_f_macro, vali_f_w, epoch_log)
-                if early_stopping.early_stop:
-                    print("Early stopping")
-                    break
-                epoch_log.write("----------------------------------------------------------------------------------------\n")
-                epoch_log.flush()
-                learning_rate_adapter(model_optim,vali_loss)
-
-
-			
-            # rename the best_vali to final_best_vali
-            os.rename(cv_path+'/'+'best_vali.pth', cv_path+'/'+'final_best_vali.pth')
-
-            print("Loading the best validation model!")
-            self.model.load_state_dict(torch.load(cv_path+'/'+'final_best_vali.pth'))
-            #model.eval()
-            test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(self.model, test_loader, criterion, iter+1)
-            print("Final Test Performance : Test Accuracy: {0:.7f}  Test weighted F1: {1:.7f}  Test macro F1 {2:.7f} ".format (test_acc, test_f_w, test_f_macro))
-            epoch_log.write("Final Test Performance : Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n\n\n\n\n\n\n\n".format(test_f_w, test_f_macro))
-            epoch_log.flush()
-
-            score_log.write("Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n".format(test_f_w, test_f_macro))
-            score_log.flush()
-
-            epoch_log.close()
-            score_log.close()
-
-            # ------------------------------ code for  regularization and fine tuning -----------------------------------------------------------------
-
-            if self.args.wavelet_filtering_finetuning:
-                # thre_index : selected number
                 epoch_log = open(epoch_log_file_name, "a")
-                epoch_log.write("----------------------------------------------------------------------------------------\n")
-                epoch_log.write("--------------------------------------Fine Tuning-----------------------------------------\n")
-                epoch_log.write("----------------------------------------------------------------------------------------\n")
+                score_log = open(score_log_file_name, "a")
 
-                finetuned_score_log_file_name = os.path.join(self.path, "finetuned_score.txt")
-                finetuned_score_log = open(finetuned_score_log_file_name, "a")
 
-                thre_index             = int(self.args.f_in * self.args.wavelet_filtering_finetuning_percent)
-                gamma_weight           = self.model.gamma.squeeze().abs().clone()
-                sorted_gamma_weight, i = torch.sort(gamma_weight)
-                threshold              = sorted_gamma_weight[thre_index]
-                mask                   = gamma_weight.data.gt(threshold).float().to(self.device)
-                idx0                   = np.squeeze(np.argwhere(np.asarray(mask.cpu().numpy())))
-                # build the new model
-                new_model              = model_builder(self.args, input_f_channel = thre_index)
-                print("------------Fine Tuning  : ", self.args.f_in-thre_index,"  will be pruned   -----------------------------------------")
-                print("old model Parameter :", self.model_size)
-                print("pruned model Parameter :", np.sum([para.numel() for para in new_model.parameters()]))
-                print("----------------------------------------------------------------------------------------")
-                # copy the weights
-                flag_channel_selection = False
-                for n,p in new_model.named_parameters():
+                print("================ Build the model ================ ")	
+                if self.args.mixup:
+                     print(" Using Mixup Training")				
+                self.model  = self.build_model().to(self.device)
 
-                    if n == "gamma" or flag_channel_selection:
-                        p.data = self.model.state_dict()[n].data[:, idx0.tolist(),:,:].clone()
-                        if n == "gamma":
-                            # set for the next channel 
-                            flag_channel_selection = True
-                        else:
-                            flag_channel_selection = False
-                    else:
-                         p.data = self.model.state_dict()[n].data.clone()
 
-                early_stopping        = EarlyStopping(patience=5, verbose=True)
+
+
+
+                early_stopping        = EarlyStopping(patience=self.args.early_stop_patience, verbose=True)
                 learning_rate_adapter = adjust_learning_rate_class(self.args,True)
-                model_optim           = optim.Adam(new_model.parameters(), lr=0.0001)
-                criterion             = nn.CrossEntropyLoss(reduction="mean").to(self.device)
+                model_optim = self._select_optimizer()
+
+                #if self.args.weighted == True:
+                #    criterion =  nn.CrossEntropyLoss(reduction="mean",weight=class_weights).to(self.device)#self._select_criterion()
+                #else:
+                #    criterion =  nn.CrossEntropyLoss(reduction="mean").to(self.device)#self._select_criterion()
+                criterion =  nn.CrossEntropyLoss(reduction="mean").to(self.device)
+
+
+
                 for epoch in range(self.args.train_epochs):
                     train_loss = []
-                    new_model.train()
+                    self.model.train()
                     epoch_time = time.time()
 
                     for i, (batch_x1,batch_x2,batch_y) in enumerate(train_loader):
-                        batch_x1 = batch_x1[:, idx0.tolist(),:,:].double().to(self.device)
 
-                        batch_y = batch_y.long().to(self.device)
-                        outputs = new_model(batch_x1)
+                        if "cross" in self.args.model_type:
+                            batch_x1 = batch_x1.double().to(self.device)
+                            batch_x2 = batch_x2.double().to(self.device)
+                            batch_y = batch_y.long().to(self.device)
+                            # model prediction
+                            if self.args.output_attention:
+                                outputs = self.model(batch_x1,batch_x2)[0]
+                            else:
+                                outputs = self.model(batch_x1,batch_x2)
+                        else:
+                            batch_x1 = batch_x1.double().to(self.device)
+                            batch_y = batch_y.long().to(self.device)
 
-                        loss = criterion(outputs, batch_y)
+                            if self.args.mixup:
+                                batch_x1, batch_y = mixup_data(batch_x1, batch_y, self.args.alpha)
+
+                            # model prediction
+                            if self.args.output_attention:
+                                outputs = self.model(batch_x1)[0]
+                            else:
+                                outputs = self.model(batch_x1)
+
+                        if self.args.mixup:
+                            criterion = MixUpLoss(criterion)
+                            loss = criterion(outputs, batch_y)
+                        else:
+                            loss = criterion(outputs, batch_y)
+
+                        if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
+                            reg_loss = 0
+                            for name,parameter in self.model.named_parameters():
+                                if "gamma" in name:
+                                    reg_loss += torch.sum(torch.abs(parameter))
+
+                            loss = loss + self.args.regulatization_tradeoff*reg_loss
+
 
                         train_loss.append(loss.item())
 
@@ -374,43 +261,151 @@ class Exp(object):
                         loss.backward()
                         model_optim.step()
 
-                    print("Fine Tuning Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
-                    epoch_log.write("Fine Tuning Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
+                    print("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
+                    epoch_log.write("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
                     epoch_log.write("\n")
 
                     train_loss = np.average(train_loss)
-                    vali_loss , vali_acc, vali_f_w,  vali_f_macro,  vali_f_micro = self.validation(new_model, val_loader, criterion, selected_index=idx0)
+                    vali_loss , vali_acc, vali_f_w,  vali_f_macro,  vali_f_micro = self.validation(self.model, val_loader, criterion)
 
-                    print("Fine Tuning VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} ".format(
+                    print("VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} ".format(
                         epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
 
-                    epoch_log.write("Fine Tuning VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} \n".format(
+                    epoch_log.write("VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} \n".format(
                         epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
 
 
-                    early_stopping(vali_loss, new_model, cv_path, vali_f_macro, vali_f_w, epoch_log)
+                    early_stopping(vali_loss, self.model, cv_path, vali_f_macro, vali_f_w, epoch_log)
                     if early_stopping.early_stop:
                         print("Early stopping")
                         break
                     epoch_log.write("----------------------------------------------------------------------------------------\n")
                     epoch_log.flush()
                     learning_rate_adapter(model_optim,vali_loss)
+
+
+			
                 # rename the best_vali to final_best_vali
-                os.rename(cv_path+'/'+'best_vali.pth', cv_path+'/'+'final_finetuned_best_vali.pth')
+                os.rename(cv_path+'/'+'best_vali.pth', cv_path+'/'+'final_best_vali.pth')
 
-                print("Loading the best finetuned validation model!")
-                new_model.load_state_dict(torch.load(cv_path+'/'+'final_finetuned_best_vali.pth'))
-
-                test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(new_model, test_loader, criterion, selected_index=idx0)
-                print("Fine Tuning Final Test Performance : Test Accuracy: {0:.7f}  Test weighted F1: {1:.7f}  Test macro F1 {2:.7f} ".format (test_acc, test_f_w, test_f_macro))
+                print("Loading the best validation model!")
+                self.model.load_state_dict(torch.load(cv_path+'/'+'final_best_vali.pth'))
+                #model.eval()
+                test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(self.model, test_loader, criterion, iter+1)
+                print("Final Test Performance : Test Accuracy: {0:.7f}  Test weighted F1: {1:.7f}  Test macro F1 {2:.7f} ".format (test_acc, test_f_w, test_f_macro))
                 epoch_log.write("Final Test Performance : Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n\n\n\n\n\n\n\n".format(test_f_w, test_f_macro))
                 epoch_log.flush()
 
-                finetuned_score_log.write("Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n".format(test_f_w, test_f_macro))
-                finetuned_score_log.flush()
+                score_log.write("Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n".format(test_f_w, test_f_macro))
+                score_log.flush()
 
                 epoch_log.close()
-                finetuned_score_log.close()
+                score_log.close()
+
+            # ------------------------------ code for  regularization and fine tuning -----------------------------------------------------------------
+
+            if self.args.wavelet_filtering_finetuning:
+                finetuned_score_log_file_name = os.path.join(self.path, "finetuned_score.txt")
+                if skip_finetuning:
+                    print("================Skip the {} CV Experiment Fine Tuning================".format(iter))
+                else:
+                    # thre_index : selected number
+                    epoch_log = open(epoch_log_file_name, "a")
+                    epoch_log.write("----------------------------------------------------------------------------------------\n")
+                    epoch_log.write("--------------------------------------Fine Tuning-----------------------------------------\n")
+                    epoch_log.write("----------------------------------------------------------------------------------------\n")
+
+                    self.model  = self.build_model().to(self.device)
+                    self.model.load_state_dict(torch.load(cv_path+'/'+'final_best_vali.pth'))
+
+                    finetuned_score_log = open(finetuned_score_log_file_name, "a")
+
+                    thre_index             = int(self.args.f_in * self.args.wavelet_filtering_finetuning_percent)
+                    gamma_weight           = self.model.gamma.squeeze().abs().clone()
+                    sorted_gamma_weight, i = torch.sort(gamma_weight)
+                    threshold              = sorted_gamma_weight[thre_index]
+                    mask                   = gamma_weight.data.gt(threshold).float().to(self.device)
+                    idx0                   = np.squeeze(np.argwhere(np.asarray(mask.cpu().numpy())))
+                    # build the new model
+                    new_model              = model_builder(self.args, input_f_channel = thre_index)
+                    print("------------Fine Tuning  : ", self.args.f_in-thre_index,"  will be pruned   -----------------------------------------")
+                    print("old model Parameter :", self.model_size)
+                    print("pruned model Parameter :", np.sum([para.numel() for para in new_model.parameters()]))
+                    print("----------------------------------------------------------------------------------------")
+                    # copy the weights
+                    flag_channel_selection = False
+                    for n,p in new_model.named_parameters():
+
+                        if n == "gamma" or flag_channel_selection:
+                            p.data = self.model.state_dict()[n].data[:, idx0.tolist(),:,:].clone()
+                            if n == "gamma":
+                                # set for the next channel 
+                                flag_channel_selection = True
+                            else:
+                                flag_channel_selection = False
+                        else:
+                            p.data = self.model.state_dict()[n].data.clone()
+
+                    early_stopping        = EarlyStopping(patience=5, verbose=True)
+                    learning_rate_adapter = adjust_learning_rate_class(self.args,True)
+                    model_optim           = optim.Adam(new_model.parameters(), lr=0.0001)
+                    criterion             = nn.CrossEntropyLoss(reduction="mean").to(self.device)
+                    for epoch in range(self.args.train_epochs):
+                        train_loss = []
+                        new_model.train()
+                        epoch_time = time.time()
+
+                        for i, (batch_x1,batch_x2,batch_y) in enumerate(train_loader):
+                            batch_x1 = batch_x1[:, idx0.tolist(),:,:].double().to(self.device)
+
+                            batch_y = batch_y.long().to(self.device)
+                            outputs = new_model(batch_x1)
+
+                            loss = criterion(outputs, batch_y)
+
+                            train_loss.append(loss.item())
+
+                            model_optim.zero_grad()
+                            loss.backward()
+                            model_optim.step()
+
+                        print("Fine Tuning Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
+                        epoch_log.write("Fine Tuning Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
+                        epoch_log.write("\n")
+
+                        train_loss = np.average(train_loss)
+                        vali_loss , vali_acc, vali_f_w,  vali_f_macro,  vali_f_micro = self.validation(new_model, val_loader, criterion, selected_index=idx0)
+
+                        print("Fine Tuning VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} ".format(
+                            epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
+
+                        epoch_log.write("Fine Tuning VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} \n".format(
+                            epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
+
+
+                        early_stopping(vali_loss, new_model, cv_path, vali_f_macro, vali_f_w, epoch_log)
+                        if early_stopping.early_stop:
+                            print("Early stopping")
+                            break
+                        epoch_log.write("----------------------------------------------------------------------------------------\n")
+                        epoch_log.flush()
+                        learning_rate_adapter(model_optim,vali_loss)
+                    # rename the best_vali to final_best_vali
+                    os.rename(cv_path+'/'+'best_vali.pth', cv_path+'/'+'final_finetuned_best_vali.pth')
+
+                    print("Loading the best finetuned validation model!")
+                    new_model.load_state_dict(torch.load(cv_path+'/'+'final_finetuned_best_vali.pth'))
+
+                    test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(new_model, test_loader, criterion, selected_index=idx0)
+                    print("Fine Tuning Final Test Performance : Test Accuracy: {0:.7f}  Test weighted F1: {1:.7f}  Test macro F1 {2:.7f} ".format (test_acc, test_f_w, test_f_macro))
+                    epoch_log.write("Final Test Performance : Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n\n\n\n\n\n\n\n".format(test_f_w, test_f_macro))
+                    epoch_log.flush()
+
+                    finetuned_score_log.write("Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n".format(test_f_w, test_f_macro))
+                    finetuned_score_log.flush()
+
+                    epoch_log.close()
+                    finetuned_score_log.close()
 
 
 
