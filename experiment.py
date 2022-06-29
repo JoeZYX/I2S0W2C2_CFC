@@ -9,7 +9,7 @@ import time
 from dataloaders import data_dict,data_set
 from sklearn.metrics import confusion_matrix
 import yaml
-
+import shutil
 # import models
 from models.model_builder import model_builder
 
@@ -154,9 +154,14 @@ class Exp(object):
             folder = os.path.join(self.path,"cv_{}".format(index))
             file_in_folder = os.listdir(folder)
             for file in file_in_folder:
-                if "final_best_vali" in file:
-                    cv_skip_number = index
-                    break
+                if self.args.wavelet_filtering_finetuning:
+                    if "final_finetuned_best_vali" in file:
+                        cv_skip_number = index
+                        break
+                else:
+                    if "final_best_vali" in file:
+                        cv_skip_number = index
+                        break
 
         for iter in range(num_of_cv):
             print("================ the {} th CV Experiment ================ ".format(iter))
@@ -170,6 +175,9 @@ class Exp(object):
 
             cv_path = os.path.join(self.path,"cv_{}".format(iter))
             if not os.path.exists(cv_path):
+                os.makedirs(cv_path)
+            else:
+                shutil.rmtree(cv_path)
                 os.makedirs(cv_path)
 
   
