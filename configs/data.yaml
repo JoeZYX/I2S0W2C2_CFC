@@ -12,6 +12,13 @@ oppo:
   num_channels: 77
   window_seconds: 1
 
+pamap2:
+  filename: "PAMAP2_Dataset/Protocol"
+  sampling_freq: 33
+  num_classes: 12
+  num_channels: 18
+  window_seconds: 5.12
+
 rw:
   filename: "RWhar_Dataset"
   sampling_freq: 50
