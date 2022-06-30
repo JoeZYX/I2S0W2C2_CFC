@@ -112,6 +112,18 @@ class Exp(object):
                                                                                                                                       config["nb_units_lstm"],
                                                                                                                                       self.args.wavelet_filtering_regularization)
             return setting
+        elif self.args.model_type == "attend":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["attend"]
+            setting = "attend_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_grufilter_{}_Regu_{}".format(self.args.data_name,
+                                                                                                                               self.args.seed,
+                                                                                                                               self.args.windowsize,
+                                                                                                                               self.args.wavelet_filtering,
+                                                                                                                               self.args.filter_scaling_factor,
+                                                                                                                               config["filter_num"],
+                                                                                                                               config["hidden_dim"],
+                                                                                                                               self.args.wavelet_filtering_regularization)
+            return setting
         else:
             raise NotImplementedError
 

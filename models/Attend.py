@@ -148,39 +148,47 @@ class AttendDiscriminate(nn.Module):
         input_shape,
         num_class,
         filter_scaling_factor=1,
-        hidden_dim = 128,
-        filter_num = 64,
-        filter_size = 5,
-        enc_num_layers = 2,
-        enc_is_bidirectional = False,
-        dropout = 0.5,
-        dropout_rnn = 0.25,
-        dropout_cls = 0.5,  #OPPO 
-        activation = "ReLU",
-        sa_div = 1,
-    ):
+        config = None):
+        #hidden_dim = 128,
+        #filter_num = 64,
+        #filter_size = 5,
+        #enc_num_layers = 2,
+        #enc_is_bidirectional = False,
+        #dropout = 0.5,
+        #dropout_rnn = 0.25,
+        #dropout_cls = 0.5,  #OPPO 
+        #activation = "ReLU",
+        #sa_div = 1,
         super(AttendDiscriminate, self).__init__()
 
-        hidden_dim = int(filter_scaling_factor*hidden_dim)
-        filter_num = int(filter_scaling_factor*filter_num)
-        self.hidden_dim = hidden_dim
+        self.hidden_dim = int(filter_scaling_factor*config["hidden_dim"])
+        self.filter_num = int(filter_scaling_factor*config["filter_num"])
+
+        self.filter_size          = config["filter_size"]
+        self.enc_num_layers       = config["enc_num_layers"]
+        self.enc_is_bidirectional = False
+        self.dropout              = config["dropout"]
+        self.dropout_rnn          = config["dropout_rnn"]
+        self.dropout_cls          = config["dropout_cls"]
+        self.activation           = config["activation"]
+        self.sa_div               = config["sa_div"]
 
 
         self.fe = FeatureExtractor(
             input_shape,
-            hidden_dim,
-            filter_num,
-            filter_size,
-            enc_num_layers,
-            enc_is_bidirectional,
-            dropout,
-            dropout_rnn,
-            activation,
-            sa_div,
+            self.hidden_dim,
+            self.filter_num,
+            self.filter_size,
+            self.enc_num_layers,
+            self.enc_is_bidirectional,
+            self.dropout,
+            self.dropout_rnn,
+            self.activation,
+            self.sa_div,
         )
 
-        self.dropout = nn.Dropout(dropout_cls)
-        self.classifier = Classifier(hidden_dim, num_class)
+        self.dropout = nn.Dropout(self.dropout_cls)
+        self.classifier = Classifier(self.hidden_dim, num_class)
 
 
 

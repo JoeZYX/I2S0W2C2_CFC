@@ -55,7 +55,7 @@ class DeepConvLSTM(nn.Module):
         """
         super(DeepConvLSTM, self).__init__()
         self.nb_conv_blocks = config["nb_conv_blocks"]
-        self.nb_filters     = int(config["nb_filters"])
+        self.nb_filters     = int(filter_scaling_factor*config["nb_filters"])
         self.dilation       = config["dilation"]
         self.batch_norm     = bool(config["batch_norm"])
         self.filter_width   = config["filter_width"]

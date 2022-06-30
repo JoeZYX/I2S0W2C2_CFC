@@ -49,9 +49,12 @@ class model_builder(nn.Module):
             print("Build the TinyHAR model!")
 
         elif self.args.model_type == "attend":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["attend"]
             self.model  = AttendDiscriminate((1,f_in, self.args.input_length, self.args.c_in ), 
                                              self.args.num_classes,
-                                             self.args.filter_scaling_factor)
+                                             self.args.filter_scaling_factor,
+                                             config)
             print("Build the AttendDiscriminate model!")
 
         elif self.args.model_type == "deepconvlstm_attn":
