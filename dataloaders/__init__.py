@@ -4,7 +4,7 @@ import numpy as np
 import os
 import pickle
 from tqdm import tqdm
-from dataloaders.utils import PrepareWavelets,FiltersExtention
+#from dataloaders.utils import PrepareWavelets,FiltersExtention
 # ----------------- har -----------------
 """
 from .dataloader_uci_har import UCI_HAR_DATA
@@ -127,13 +127,13 @@ class data_set(Dataset):
         self.channel_in = self.data_x.shape[1]-2
 
 
-        if self.args.wavelet_filtering:
-            SelectedWavelet = PrepareWavelets(K=self.args.number_wavelet_filtering, length=self.args.windowsize)
-            self.ScaledFilter = FiltersExtention(SelectedWavelet)
-            if self.args.windowsize%2==1:
-                self.Filter_ReplicationPad1d = torch.nn.ReplicationPad1d(int((self.args.windowsize-1)/2))
-            else:
-                self.Filter_ReplicationPad1d = torch.nn.ReplicationPad1d(int(self.args.windowsize/2))
+        #if self.args.wavelet_filtering:
+        #    SelectedWavelet = PrepareWavelets(K=self.args.number_wavelet_filtering, length=self.args.windowsize)
+        #    self.ScaledFilter = FiltersExtention(SelectedWavelet)
+        #    if self.args.windowsize%2==1:
+        #        self.Filter_ReplicationPad1d = torch.nn.ReplicationPad1d(int((self.args.windowsize-1)/2))
+        #    else:
+        #        self.Filter_ReplicationPad1d = torch.nn.ReplicationPad1d(int(self.args.windowsize/2))
 
         if self.flag == "train":
             print("The number of classes is : ", self.nb_classes)
@@ -157,21 +157,8 @@ class data_set(Dataset):
             sample_y = self.class_transform[self.data_y.iloc[start_index:end_index].mode().loc[0]]
             #print(sample_x.shape)
 
-            if self.args.wavelet_filtering:
-                data_x = sample_x.T
-                data_x = np.expand_dims(data_x,axis=0)
-                data_x = torch.tensor(data_x)
-                data_x = self.Filter_ReplicationPad1d(data_x)
-                data_x = data_x[0]
-                data_x = data_x.repeat(1,1,1)[:,:,:,None]
-                data_x = data_x.permute([0,3,1,2])
-                data_x = torch.nn.functional.conv2d(data_x, self.ScaledFilter, padding='valid')[0,:,:,:self.args.windowsize]
- 
-                data_x = data_x.permute(0,2,1)#.reshape(self.args.windowsize,-1)
-                sample_x = np.expand_dims(sample_x,0)
-                sample_x = np.concatenate([sample_x,data_x],axis=0)
-            else:
-                sample_x = np.expand_dims(sample_x,0)
+
+            sample_x = np.expand_dims(sample_x,0)
             #print(sample_x.shape)
             return sample_x, sample_y,sample_y
 

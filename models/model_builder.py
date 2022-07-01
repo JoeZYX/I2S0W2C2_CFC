@@ -5,13 +5,51 @@ from models.deepconvlstm import DeepConvLSTM
 from models.deepconvlstm_attn import DeepConvLSTM_ATTN
 from models.crossatten.model import Cross_TS,TSTransformer_Basic
 from models.TinyHAR import TinyHAR_Model
+from dataloaders.utils import PrepareWavelets,FiltersExtention
 # ------- import other packages ----------------
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import yaml
+import numpy as np
+
+class Wavelet_learnable_filter(nn.Module):
+    def __init__(self, args, f_in):
+        super(Wavelet_learnable_filter, self).__init__()
+        self.args = args
+        if args.windowsize%2==1:
+            self.Filter_ReplicationPad2d = nn.ReplicationPad2d((int((args.windowsize-1)/2),int((args.windowsize-1)/2),0,0))
+            raw_filter = np.zeros((1,1,1,args.windowsize))
+            raw_filter[0,0,0,int((args.windowsize-1)/2)] = 1
+        else:
+            self.Filter_ReplicationPad2d = nn.ReplicationPad2d((int(args.windowsize/2),int(args.windowsize/2),0,0))
+            raw_filter = np.zeros((1,1,1,args.windowsize))
+            raw_filter[0,0,0,int(args.windowsize/2)] = 1
+        raw_filter = torch.tensor(raw_filter)
+        SelectedWavelet = PrepareWavelets(K=args.number_wavelet_filtering, length=args.windowsize)
+        ScaledFilter = FiltersExtention(SelectedWavelet)
+        ScaledFilter = torch.cat((raw_filter,ScaledFilter),0)
+
+        #print("debug: ", ScaledFilter.shape[0], "   ", f_in)
 
 
+        self.wavelet_conv = nn.Conv2d(1, f_in, 
+                                      (1,ScaledFilter.shape[3]),
+                                      stride=1, bias=False, padding='valid') 
+        # TODO shut down
+        if not args.wavelet_filtering_learnable and f_in==ScaledFilter.shape[0]:
+            print("clone the  wavefiler weight")
+            self.wavelet_conv.weight.data.copy_(ScaledFilter)                                        
+            self.wavelet_conv.weight.requires_grad = False                                       
+                                                               
+    def forward(self,x):
+        # input shape B 1 L  C  
+        x = x.permute(0,1,3,2)
+        x = self.Filter_ReplicationPad2d(x)
+        x = self.wavelet_conv(x)[:,:,:,:self.args.windowsize]
+        x = x.permute(0,1,3,2)
+
+        return x
 
 class model_builder(nn.Module):
     """
@@ -26,17 +64,22 @@ class model_builder(nn.Module):
         else:
             f_in  = input_f_channel
 
-        if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
-            print("Wavelet Filtering Regularization")
-            shape      = (1, f_in, 1, 1)
-            self.register_parameter('gamma' , nn.Parameter(torch.ones(shape)))
-            # self.gamma = nn.Parameter(torch.ones(shape))
-            #self.register_buff
+
+
+
+        if self.args.wavelet_filtering:
+            self.wave_conv = Wavelet_learnable_filter(args, f_in)
+
+
+            if self.args.wavelet_filtering_regularization:
+                print("Wavelet Filtering Regularization")
+                shape      = (1, f_in, 1, 1)
+                self.register_parameter('gamma' , nn.Parameter(torch.ones(shape)))
+                # self.gamma = nn.Parameter(torch.ones(shape))
+                #self.register_buff
 		
 
-        self.first_conv = args.first_conv
-        #if self.first_conv:
-        #    self.pre_conv = nn.Conv2d()??
+
 
 
         if self.args.model_type == "tinyhar":
@@ -80,8 +123,10 @@ class model_builder(nn.Module):
         #if self.first_conv ：
         #    x = self.pre_conv(x)
 
-        if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
-            x = x * self.gamma
+        if self.args.wavelet_filtering:
+            x = self.wave_conv(x)
+            if self.args.wavelet_filtering_regularization:
+                x = x * self.gamma
         y = self.model(x)
         return y
 

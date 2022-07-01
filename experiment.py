@@ -37,7 +37,7 @@ class Exp(object):
 
         self.model  = self.build_model().to(self.device)
         print("Done!")
-        self.model_size = np.sum([para.numel() for para in self.model.parameters()])
+        self.model_size = np.sum([para.numel() for para in self.model.parameters() if para.requires_grad])
         print("Parameter :", self.model_size)
 
         torch.manual_seed(self.args.seed)
@@ -347,8 +347,9 @@ class Exp(object):
                     # copy the weights
                     flag_channel_selection = False
                     for n,p in new_model.named_parameters():
-
-                        if n == "gamma" or flag_channel_selection:
+                        if "wavelet_conv" in n:
+                            p.data = self.model.state_dict()[n].data[idx0.tolist(), :,:,:].clone()
+                        elif n == "gamma" or flag_channel_selection:
                             p.data = self.model.state_dict()[n].data[:, idx0.tolist(),:,:].clone()
                             if n == "gamma":
                                 # set for the next channel 
@@ -368,7 +369,7 @@ class Exp(object):
                         epoch_time = time.time()
 
                         for i, (batch_x1,batch_x2,batch_y) in enumerate(train_loader):
-                            batch_x1 = batch_x1[:, idx0.tolist(),:,:].double().to(self.device)
+                            batch_x1 = batch_x1.double().to(self.device)
 
                             batch_y = batch_y.long().to(self.device)
                             outputs = new_model(batch_x1)
@@ -386,7 +387,7 @@ class Exp(object):
                         epoch_log.write("\n")
 
                         train_loss = np.average(train_loss)
-                        vali_loss , vali_acc, vali_f_w,  vali_f_macro,  vali_f_micro = self.validation(new_model, val_loader, criterion, selected_index=idx0)
+                        vali_loss , vali_acc, vali_f_w,  vali_f_macro,  vali_f_micro = self.validation(new_model, val_loader, criterion)
 
                         print("Fine Tuning VALI: Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}  Vali Loss: {3:.7f} Vali Accuracy: {4:.7f}  Vali weighted F1: {5:.7f}  Vali macro F1 {6:.7f} ".format(
                             epoch + 1, train_steps, train_loss, vali_loss, vali_acc, vali_f_w, vali_f_macro))
@@ -408,7 +409,7 @@ class Exp(object):
                     print("Loading the best finetuned validation model!")
                     new_model.load_state_dict(torch.load(cv_path+'/'+'final_finetuned_best_vali.pth'))
 
-                    test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(new_model, test_loader, criterion, selected_index=idx0)
+                    test_loss , test_acc, test_f_w,  test_f_macro,  test_f_micro = self.validation(new_model, test_loader, criterion)
                     print("Fine Tuning Final Test Performance : Test Accuracy: {0:.7f}  Test weighted F1: {1:.7f}  Test macro F1 {2:.7f} ".format (test_acc, test_f_w, test_f_macro))
                     epoch_log.write("Final Test Performance : Test weighted F1: {0:.7f}  Test macro F1 {1:.7f}\n\n\n\n\n\n\n\n".format(test_f_w, test_f_macro))
                     epoch_log.flush()
