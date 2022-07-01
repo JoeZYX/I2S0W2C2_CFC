@@ -123,7 +123,7 @@ class Exp(object):
                                                                                                                                                self.args.filter_scaling_factor,
                                                                                                                                                config["filter_num"],
                                                                                                                                                config["hidden_dim"],
-                                                                                                                                               self.args.wavelet_filtering_regularization
+                                                                                                                                               self.args.wavelet_filtering_regularization,
                                                                                                                                                self.args.wavelet_filtering_learnable)
             return setting
         else:
@@ -336,12 +336,13 @@ class Exp(object):
 
                     thre_index             = int(self.args.f_in * self.args.wavelet_filtering_finetuning_percent)
                     gamma_weight           = self.model.gamma.squeeze().abs().clone()
-                    sorted_gamma_weight, i = torch.sort(gamma_weight)
+                    sorted_gamma_weight, i = torch.sort(gamma_weight,descending=True)
                     threshold              = sorted_gamma_weight[thre_index]
                     mask                   = gamma_weight.data.gt(threshold).float().to(self.device)
                     idx0                   = np.squeeze(np.argwhere(np.asarray(mask.cpu().numpy())))
                     # build the new model
                     new_model              = model_builder(self.args, input_f_channel = thre_index)
+                    print("+++++++++++++++++++++++++++++++++",new_model.gamma.shape)
                     print("------------Fine Tuning  : ", self.args.f_in-thre_index,"  will be pruned   -----------------------------------------")
                     print("old model Parameter :", self.model_size)
                     print("pruned model Parameter :", np.sum([para.numel() for para in new_model.parameters()]))
@@ -360,7 +361,7 @@ class Exp(object):
                                 flag_channel_selection = False
                         else:
                             p.data = self.model.state_dict()[n].data.clone()
-
+                    print("+++++++++++++++++++++++++++++++++",new_model.gamma.shape)
                     early_stopping        = EarlyStopping(patience=5, verbose=True)
                     learning_rate_adapter = adjust_learning_rate_class(self.args,True)
                     model_optim           = optim.Adam(new_model.parameters(), lr=0.0001)
