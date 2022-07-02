@@ -5,6 +5,7 @@ from models.deepconvlstm import DeepConvLSTM
 from models.deepconvlstm_attn import DeepConvLSTM_ATTN
 from models.crossatten.model import Cross_TS,TSTransformer_Basic
 from models.TinyHAR import TinyHAR_Model
+from models.SA_HAR import SA_HAR
 from dataloaders.utils import PrepareWavelets,FiltersExtention
 # ------- import other packages ----------------
 import torch
@@ -105,6 +106,15 @@ class model_builder(nn.Module):
                                             self.args.num_classes,
                                             self.args.filter_scaling_factor)
             print("Build the deepconvlstm_attn model!")
+
+        elif self.args.model_type == "sahar":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["sahar"]
+            self.model  = SA_HAR((1,f_in, self.args.input_length, self.args.c_in ), 
+                                            self.args.num_classes,
+                                            self.args.filter_scaling_factor,
+                                            config)
+            print("Build the sahar model!")
 
         elif self.args.model_type == "deepconvlstm":
             config_file = open('../../configs/model.yaml', mode='r')

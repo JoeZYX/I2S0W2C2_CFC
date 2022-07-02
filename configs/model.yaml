@@ -19,3 +19,6 @@ attend:
   dropout_cls: 0.5
   activation: "ReLU"
   sa_div: 1
+
+sahar:
+  nb_filters: 128

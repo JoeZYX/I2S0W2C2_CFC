@@ -4,13 +4,46 @@ import torch.nn.functional as F
 import math
 
 # ====================================  model ==================================== #
+class ConvBlock(nn.Module):
+    """
+    Normal convolution block
+    """
+    def __init__(self, filter_width, input_filters, nb_filters, dilation, batch_norm):
+        super(ConvBlock, self).__init__()
+        self.filter_width = filter_width
+        self.input_filters = input_filters
+        self.nb_filters = nb_filters
+        self.dilation = dilation
+        self.batch_norm = batch_norm
+
+        self.conv1 = nn.Conv2d(self.input_filters, self.nb_filters, (self.filter_width, 1), dilation=(self.dilation, 1),padding='same')
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(self.nb_filters, 1, (self.filter_width, 1), dilation=(self.dilation, 1), stride=(1,1),padding='same')
+        if self.batch_norm:
+            self.norm1 = nn.BatchNorm2d(self.nb_filters)
+            self.norm2 = nn.BatchNorm2d(1)
+
+    def forward(self, x):
+
+        out = self.conv1(x)
+        out = self.relu(out)
+        if self.batch_norm:
+            out = self.norm1(out)
+
+        out = self.conv2(out)
+        out = self.relu(out)
+        if self.batch_norm:
+            out = self.norm2(out)
+
+        return out
+
 class SensorAttention(nn.Module):
-    def __init__(self, channel ):
+    def __init__(self, input_shape, nb_filters ):
         super(SensorAttention, self).__init__()
-        self.ln = nn.LayerNorm(channel)        #  length维度
+        self.ln = nn.LayerNorm(input_shape[3])        #  length维度
         
-        self.conv_1 = nn.Conv2d(in_channels=1, out_channels=128, kernel_size=3, dilation=2, padding='same')
-        self.conv_f = nn.Conv2d(in_channels=128, out_channels=1, kernel_size=1, padding='same')
+        self.conv_1 = nn.Conv2d(in_channels=1, out_channels=nb_filters, kernel_size=(5,1), dilation=1, padding='same')
+        self.conv_f = nn.Conv2d(in_channels=nb_filters, out_channels=1, kernel_size=1, padding='same')
         self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=3)
 
@@ -122,40 +155,53 @@ class AttentionWithContext(nn.Module):
 
 
 class SA_HAR(nn.Module):
-    def __init__(self, num_channel, sequence_length, num_classes):
+    def __init__(self, 
+                 input_shape, 
+                 nb_classes, 
+                 filter_scaling_factor, 
+                 config):
         super(SA_HAR, self).__init__()
+
+        self.nb_filters     = int(filter_scaling_factor*config["nb_filters"])
+
+        self.first_conv = ConvBlock(5, input_shape[1], self.nb_filters, 1, True).double()
         
-        self.SensorAttention = SensorAttention(channel = num_channel)
-        self.conv1d = nn.Conv1d(in_channels=num_channel, out_channels=128, kernel_size=1)
+        self.SensorAttention = SensorAttention(input_shape,self.nb_filters)
+        self.conv1d = nn.Conv1d(in_channels=input_shape[3], out_channels=self.nb_filters, kernel_size=1)
         
         
-        self.pos_embedding = nn.Parameter(self.sinusoidal_embedding(sequence_length, 128), requires_grad=False)
-        self.pos_dropout = nn.Dropout(p=0.2) 
+        #self.pos_embedding = nn.Parameter(self.sinusoidal_embedding(input_shape[2], self.nb_filters), requires_grad=False)
+        #self.pos_dropout = nn.Dropout(p=0.2) 
         
-        self.EncoderLayer1 = EncoderLayer( d_model = 128, n_heads =4 , d_ff = 512)
-        self.EncoderLayer2 = EncoderLayer( d_model = 128, n_heads =4 , d_ff = 512)
+        self.EncoderLayer1 = EncoderLayer( d_model = self.nb_filters, n_heads =4 , d_ff = self.nb_filters*4)
+        self.EncoderLayer2 = EncoderLayer( d_model = self.nb_filters, n_heads =4 , d_ff = self.nb_filters*4)
 
 
-        self.AttentionWithContext = AttentionWithContext(128)
+        self.AttentionWithContext = AttentionWithContext(self.nb_filters)
 
-        self.fc1 = nn.Linear(128, 4*num_classes)
+        self.fc1 = nn.Linear(self.nb_filters, 4*nb_classes)
         self.relu = nn.ReLU()
         
         self.dropout = nn.Dropout(p=0.2)
 
-        self.fc_out = nn.Linear(4*num_classes, num_classes)      # 从d_dim到6classes, 取72是论文中说的4倍classes数（4*18）
+        self.fc_out = nn.Linear(4*nb_classes, nb_classes)      # 从d_dim到6classes, 取72是论文中说的4倍classes数（4*18）
 
     
-    def forward(self,inputs):                
+    def forward(self,x): 
+        # x -- > B  fin  length Chennel
+        x = self.first_conv(x)
+        x = x.squeeze(1) 
+        # x -- > B length Chennel
+	
         # B L C
-        si, _ = self.SensorAttention(inputs) 
+        si, _ = self.SensorAttention(x) 
         
         # B L C
         x = self.conv1d(si.permute(0,2,1)).permute(0,2,1) 
         x = self.relu(x)            
         # B L C
-        x = x + self.pos_embedding
-        x = self.pos_dropout(x)
+        #x = x + self.pos_embedding
+        #x = self.pos_dropout(x)
 
         x = self.EncoderLayer1(x)            # batch * len * d_dim
         x = self.EncoderLayer2(x)            # batch * len * d_dim

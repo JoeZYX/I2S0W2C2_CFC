@@ -126,6 +126,19 @@ class Exp(object):
                                                                                                                                                self.args.wavelet_filtering_regularization,
                                                                                                                                                self.args.wavelet_filtering_learnable)
             return setting
+        elif self.args.model_type == "sahar":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["sahar"]
+            setting = "sahar_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_grufilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
+                                                                                                                                              self.args.seed,
+                                                                                                                                              self.args.windowsize,
+                                                                                                                                              self.args.wavelet_filtering,
+                                                                                                                                              self.args.filter_scaling_factor,
+                                                                                                                                              config["nb_filters"],
+                                                                                                                                              None,
+                                                                                                                                              self.args.wavelet_filtering_regularization,
+                                                                                                                                              self.args.wavelet_filtering_learnable)
+            return setting
         else:
             raise NotImplementedError
 
@@ -341,8 +354,8 @@ class Exp(object):
                     mask                   = gamma_weight.data.gt(threshold).float().to(self.device)
                     idx0                   = np.squeeze(np.argwhere(np.asarray(mask.cpu().numpy())))
                     # build the new model
-                    new_model              = model_builder(self.args, input_f_channel = thre_index)
-                    print("+++++++++++++++++++++++++++++++++",new_model.gamma.shape)
+                    new_model              = model_builder(self.args, input_f_channel = thre_index).to(self.device)
+
                     print("------------Fine Tuning  : ", self.args.f_in-thre_index,"  will be pruned   -----------------------------------------")
                     print("old model Parameter :", self.model_size)
                     print("pruned model Parameter :", np.sum([para.numel() for para in new_model.parameters()]))
@@ -352,16 +365,15 @@ class Exp(object):
                     for n,p in new_model.named_parameters():
                         if "wavelet_conv" in n:
                             p.data = self.model.state_dict()[n].data[idx0.tolist(), :,:,:].clone()
-                        elif n == "gamma" or flag_channel_selection:
+                        elif n == "gamma":
+                            flag_channel_selection = True
                             p.data = self.model.state_dict()[n].data[:, idx0.tolist(),:,:].clone()
-                            if n == "gamma":
-                                # set for the next channel 
-                                flag_channel_selection = True
-                            else:
-                                flag_channel_selection = False
+                        elif flag_channel_selection and "conv" in n:
+                            p.data = self.model.state_dict()[n].data[:, idx0.tolist(),:,:].clone()
+                            flag_channel_selection = False
                         else:
                             p.data = self.model.state_dict()[n].data.clone()
-                    print("+++++++++++++++++++++++++++++++++",new_model.gamma.shape)
+
                     early_stopping        = EarlyStopping(patience=5, verbose=True)
                     learning_rate_adapter = adjust_learning_rate_class(self.args,True)
                     model_optim           = optim.Adam(new_model.parameters(), lr=0.0001)
