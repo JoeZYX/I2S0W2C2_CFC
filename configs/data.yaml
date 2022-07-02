@@ -33,6 +33,13 @@ skodar:
   num_channels: 30
   window_seconds: 2.56
 
+dsads:
+  filename: "DSADS_Dataset"
+  sampling_freq: 25
+  num_classes: 19
+  num_channels: 45
+  window_seconds: 5
+
 ear:
   filename: "EAR_Dataset"
   sampling_freq: 20

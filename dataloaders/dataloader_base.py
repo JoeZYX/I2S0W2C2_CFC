@@ -425,10 +425,10 @@ class BASE_DATA():
 
             if flag == "train":
                 displacement = int(0.5 * self.windowsize)
-                drop_for_augmentation = int(0.2 * self.windowsize)
+                #drop_for_augmentation = int(0.2 * self.windowsize)
             elif flag == "test":
                 displacement = int(0.1 * self.windowsize)
-                drop_for_augmentation = 1
+                #drop_for_augmentation = 1
 
             window_index = []
             for index in data_x.act_block.unique():
@@ -436,10 +436,10 @@ class BASE_DATA():
                 temp_df = data_x[data_x["act_block"]==index]
                 assert len(temp_df["sub_id"].unique()) == 1
                 sub_id = temp_df["sub_id"].unique()[0]
-                start = temp_df.index[0] + drop_for_augmentation 
+                start = temp_df.index[0]# + drop_for_augmentation 
                 end   = start+windowsize
 
-                while end <= temp_df.index[-1] + drop_for_augmentation :
+                while end <= temp_df.index[-1]+1:# + drop_for_augmentation :
 
                     if temp_df.loc[start:end-1,"activity_id"].mode().loc[0] not in self.drop_activities:
                         window_index.append([sub_id, start, end])
