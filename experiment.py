@@ -374,7 +374,7 @@ class Exp(object):
                         else:
                             p.data = self.model.state_dict()[n].data.clone()
 
-                    early_stopping        = EarlyStopping(patience=5, verbose=True)
+                    early_stopping        = EarlyStopping(patience=15, verbose=True)
                     learning_rate_adapter = adjust_learning_rate_class(self.args,True)
                     model_optim           = optim.Adam(new_model.parameters(), lr=0.0001)
                     criterion             = nn.CrossEntropyLoss(reduction="mean").to(self.device)

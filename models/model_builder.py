@@ -89,7 +89,9 @@ class model_builder(nn.Module):
             if self.args.wavelet_filtering_regularization:
                 print("Wavelet Filtering Regularization")
                 shape      = (1, f_in, 1, 1)
-                self.register_parameter('gamma' , nn.Parameter(torch.ones(shape)))
+                p          = torch.zeros(shape)
+                p[0,0,0,0] = 1
+                self.register_parameter('gamma' , nn.Parameter(p))
                 # self.gamma = nn.Parameter(torch.ones(shape))
                 #self.register_buff
 		
