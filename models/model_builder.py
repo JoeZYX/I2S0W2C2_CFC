@@ -14,6 +14,14 @@ import torch.nn.functional as F
 import yaml
 import numpy as np
 
+class Identity(nn.Module):
+
+  def __init__(self):
+    super(Identity, self).__init__()
+
+  def forward(self, x):
+    return x
+
 class Wavelet_learnable_filter(nn.Module):
     def __init__(self, args, f_in):
         super(Wavelet_learnable_filter, self).__init__()
@@ -41,15 +49,21 @@ class Wavelet_learnable_filter(nn.Module):
         if not args.wavelet_filtering_learnable and f_in==ScaledFilter.shape[0]:
             print("clone the  wavefiler weight")
             self.wavelet_conv.weight.data.copy_(ScaledFilter)                                        
-            self.wavelet_conv.weight.requires_grad = False                                       
+            self.wavelet_conv.weight.requires_grad = False
+        if self.args.wavelet_filtering_layernorm:
+            print("wavelet layernorm")
+            self.layer_norm = nn.LayerNorm(self.args.windowsize, elementwise_affine=False)
                                                                
     def forward(self,x):
         # input shape B 1 L  C  
         x = x.permute(0,1,3,2)
         x = self.Filter_ReplicationPad2d(x)
         x = self.wavelet_conv(x)[:,:,:,:self.args.windowsize]
-        x = x.permute(0,1,3,2)
 
+        if self.args.wavelet_filtering_layernorm:
+            x = self.layer_norm(x)
+
+        x = x.permute(0,1,3,2)
         return x
 
 class model_builder(nn.Module):
@@ -125,8 +139,8 @@ class model_builder(nn.Module):
                                        config)
             print("Build the DeepConvLSTM model!")
         else:
-            raise NotImplementedError
-
+            self.model = Identity()
+            print("Build the None model!")
 
 
     def forward(self,x):
