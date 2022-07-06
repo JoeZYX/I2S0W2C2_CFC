@@ -360,7 +360,7 @@ class Exp(object):
 
                     finetuned_score_log = open(finetuned_score_log_file_name, "a")
 
-                    thre_index             = int(self.args.f_in * self.args.wavelet_filtering_finetuning_percent)
+                    thre_index             = int(self.args.f_in * self.args.wavelet_filtering_finetuning_percent)-1
                     gamma_weight           = self.model.gamma.squeeze().abs().clone()
                     sorted_gamma_weight, i = torch.sort(gamma_weight,descending=True)
                     threshold              = sorted_gamma_weight[thre_index]
