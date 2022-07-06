@@ -27,11 +27,11 @@ class Wavelet_learnable_filter(nn.Module):
         super(Wavelet_learnable_filter, self).__init__()
         self.args = args
         if args.windowsize%2==1:
-            self.Filter_ReplicationPad2d = nn.ReplicationPad2d((int((args.windowsize-1)/2),int((args.windowsize-1)/2),0,0))
+            self.Filter_ReplicationPad2d = nn.ReflectionPad2d((int((args.windowsize-1)/2),int((args.windowsize-1)/2),0,0))
             raw_filter = np.zeros((1,1,1,args.windowsize))
             raw_filter[0,0,0,int((args.windowsize-1)/2)] = 1
         else:
-            self.Filter_ReplicationPad2d = nn.ReplicationPad2d((int(args.windowsize/2),int(args.windowsize/2),0,0))
+            self.Filter_ReplicationPad2d = nn.ReflectionPad2d((int(args.windowsize/2),int(args.windowsize/2),0,0))
             raw_filter = np.zeros((1,1,1,args.windowsize))
             raw_filter[0,0,0,int(args.windowsize/2)] = 1
         raw_filter = torch.tensor(raw_filter)
@@ -100,8 +100,11 @@ class model_builder(nn.Module):
 
 
         if self.args.model_type == "tinyhar":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["tinyhar"]
             self.model  = TinyHAR_Model((1,f_in, self.args.input_length, self.args.c_in ), 
                                          self.args.num_classes,
+                                         filter_num = config["filter_num"],
                                          cross_channel_interaction_type = self.args.cross_channel_interaction_type,    # attn  transformer  identity
                                          cross_channel_aggregation_type = self.args.cross_channel_aggregation_type,  # filter  naive  FC
                                          temporal_info_interaction_type = self.args.temporal_info_interaction_type,     # gru  lstm  attn  transformer  identity

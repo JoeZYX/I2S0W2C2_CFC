@@ -216,8 +216,8 @@ def FiltersExtention(Filters):
     Filter_temp = Filter_temp.permute(2,0,1,3)
 
     # normalization
-    energy = torch.abs(torch.sum(Filter_temp, dim=3, keepdims=True))
-    energy[energy<=1] = 1.
+    energy = torch.sum(Filter_temp, dim=3, keepdims=True)
+    energy[torch.abs(energy)<=1] = 1.
     Filter_temp = Filter_temp / energy
 
     return Filter_temp

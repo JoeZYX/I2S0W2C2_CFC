@@ -243,7 +243,7 @@ class TinyHAR_Model(nn.Module):
         input_shape ,
         number_class , 
 
-        filter_num                     = 16, # 所有层拥有同样的dim
+        filter_num,
         nb_conv_layers                 = 4,        
         filter_size                    = 5,
         

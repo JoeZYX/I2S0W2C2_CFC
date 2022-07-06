@@ -139,6 +139,19 @@ class Exp(object):
                                                                                                                                               self.args.wavelet_filtering_regularization,
                                                                                                                                               self.args.wavelet_filtering_learnable)
             return setting
+        elif self.args.model_type == "tinyhar":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["tinyhar"]
+            setting = "tinyhar_data_{}_seed_{}_windowsize_{}_cvfilter_{}_CI_{}_CA_{}_TI_{}_TA_{}".format(self.args.data_name,
+                                                                                                        self.args.seed,
+                                                                                                        self.args.windowsize,
+                                                                                                        self.args.wavelet_filtering,
+                                                                                                        config["filter_num"],
+                                                                                                        self.args.cross_channel_interaction_type,
+                                                                                                        self.args.cross_channel_aggregation_type,
+                                                                                                        self.args.temporal_info_interaction_type,
+                                                                                                        self.args.temporal_info_aggregation_type )
+            return setting
         else:
             raise NotImplementedError
 
