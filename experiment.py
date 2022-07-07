@@ -40,9 +40,7 @@ class Exp(object):
         self.model_size = np.sum([para.numel() for para in self.model.parameters() if para.requires_grad])
         print("Parameter :", self.model_size)
 
-        torch.manual_seed(self.args.seed)
-        random.seed(self.args.seed)
-        np.random.seed(self.args.seed)
+
         print("Set the seed as : ", self.args.seed)
 
     def acquire_device(self):
@@ -187,6 +185,9 @@ class Exp(object):
 
 
         for iter in range(num_of_cv):
+            torch.manual_seed(self.args.seed)
+            random.seed(self.args.seed)
+            np.random.seed(self.args.seed)
             print("================ the {} th CV Experiment ================ ".format(iter))
 	
             dataset.update_train_val_test_keys()
