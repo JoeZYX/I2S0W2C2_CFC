@@ -9,7 +9,6 @@ import time
 from dataloaders import data_dict,data_set
 from sklearn.metrics import confusion_matrix
 import yaml
-import shutil
 # import models
 from models.model_builder import model_builder
 
@@ -22,7 +21,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 import random
-
+import os
 
 
 class Exp(object):
@@ -173,6 +172,13 @@ class Exp(object):
 
         score_log_file_name = os.path.join(self.path, "score.txt")
 
+        torch.manual_seed(self.args.seed)
+        torch.cuda.manual_seed(self.args.seed)
+        torch.cuda.manual_seed_all(self.args.seed)
+        torch.backends.cudnn.deterministic = True 
+        random.seed(self.args.seed)
+        np.random.seed(self.args.seed)
+
         # load the data
         dataset = data_dict[self.args.data_name](self.args)
 
@@ -185,15 +191,27 @@ class Exp(object):
 
 
         for iter in range(num_of_cv):
+
             torch.manual_seed(self.args.seed)
+            torch.cuda.manual_seed(self.args.seed)
+            torch.cuda.manual_seed_all(self.args.seed)
+            torch.backends.cudnn.deterministic = True 
             random.seed(self.args.seed)
             np.random.seed(self.args.seed)
+            g = torch.Generator()
+            g.manual_seed(self.args.seed)                  
+            torch.backends.cudnn.benchmark = False
+            os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+            os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
+ 
+
             print("================ the {} th CV Experiment ================ ".format(iter))
 	
             dataset.update_train_val_test_keys()
 
             cv_path = os.path.join(self.path,"cv_{}".format(iter))
             # get the loader of train val test
+
             train_loader = self._get_data(dataset, flag = 'train', weighted_sampler = self.args.weighted_sampler )
             val_loader = self._get_data(dataset, flag = 'vali', weighted_sampler = self.args.weighted_sampler)
             test_loader   = self._get_data(dataset, flag = 'test', weighted_sampler = self.args.weighted_sampler)
@@ -253,39 +271,41 @@ class Exp(object):
 
 
                 for epoch in range(self.args.train_epochs):
+
+
                     train_loss = []
                     self.model.train()
                     epoch_time = time.time()
 
                     for i, (batch_x1,batch_x2,batch_y) in enumerate(train_loader):
 
-                        if "cross" in self.args.model_type:
-                            batch_x1 = batch_x1.double().to(self.device)
-                            batch_x2 = batch_x2.double().to(self.device)
-                            batch_y = batch_y.long().to(self.device)
-                            # model prediction
-                            if self.args.output_attention:
-                                outputs = self.model(batch_x1,batch_x2)[0]
-                            else:
-                                outputs = self.model(batch_x1,batch_x2)
-                        else:
-                            batch_x1 = batch_x1.double().to(self.device)
-                            batch_y = batch_y.long().to(self.device)
+                        #if "cross" in self.args.model_type:
+                        #    batch_x1 = batch_x1.double().to(self.device)
+                        #    batch_x2 = batch_x2.double().to(self.device)
+                        #    batch_y = batch_y.long().to(self.device)
+                        #    # model prediction
+                        #    if self.args.output_attention:
+                        #        outputs = self.model(batch_x1,batch_x2)[0]
+                        #    else:
+                        #        outputs = self.model(batch_x1,batch_x2)
+                        #else:
+                        batch_x1 = batch_x1.double().to(self.device) #--
+                        batch_y = batch_y.long().to(self.device) #--
 
-                            if self.args.mixup:
-                                batch_x1, batch_y = mixup_data(batch_x1, batch_y, self.args.alpha)
+                        #    if self.args.mixup:
+                        #        batch_x1, batch_y = mixup_data(batch_x1, batch_y, self.args.alpha)
 
-                            # model prediction
-                            if self.args.output_attention:
-                                outputs = self.model(batch_x1)[0]
-                            else:
-                                outputs = self.model(batch_x1)
+                        #    # model prediction
+                        #    if self.args.output_attention:
+                        #        outputs = self.model(batch_x1)[0]
+                        #    else:
+                        outputs = self.model(batch_x1) #--
 
-                        if self.args.mixup:
-                            criterion = MixUpLoss(criterion)
-                            loss = criterion(outputs, batch_y)
-                        else:
-                            loss = criterion(outputs, batch_y)
+                        #if self.args.mixup:
+                        #    criterion = MixUpLoss(criterion)
+                        #    loss = criterion(outputs, batch_y)
+                        #else:
+                        loss = criterion(outputs, batch_y)  #--
 
                         if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
                             reg_loss = 0

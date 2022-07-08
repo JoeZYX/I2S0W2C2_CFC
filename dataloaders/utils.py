@@ -140,7 +140,7 @@ class Normalizer(object):
 
 
 
-def PrepareWavelets(K, length=20):
+def PrepareWavelets(K, length=20, seed= 1):
     motherwavelets = []
     for family in pywt.families():
         for mother in pywt.wavelist(family):
@@ -179,7 +179,7 @@ def PrepareWavelets(K, length=20):
     FRE = FRE[1:,:]
 
     PSI_extended = np.hstack((PSI, FRE))
-    kmeans = KMeans(n_clusters=K, random_state=0).fit(PSI_extended)
+    kmeans = KMeans(n_clusters=K, random_state=seed).fit(PSI_extended)
     label = kmeans.labels_
 
     SelectedWavelet = np.zeros([1,length])

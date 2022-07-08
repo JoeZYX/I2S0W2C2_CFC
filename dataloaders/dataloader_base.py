@@ -117,7 +117,8 @@ class BASE_DATA():
         # ======================= Generate the Sliding window for Train/Test =================================
         # train/test is different by the sliding step.
         self.train_slidingwindows = self.get_the_sliding_index(self.data_x.copy(), self.data_y.copy(), "train")
-        self.test_slidingwindows  = self.get_the_sliding_index(self.data_x.copy(), self.data_y.copy(), "test")
+        if self.exp_mode not in ["SOCV","FOCV"]:
+            self.test_slidingwindows  = self.get_the_sliding_index(self.data_x.copy(), self.data_y.copy(), "test")
 
 
         # ----------------------- TODO ----------------------------------------

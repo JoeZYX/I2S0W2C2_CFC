@@ -81,9 +81,11 @@ class data_set(Dataset):
         self.load_all = args.load_all
         self.data_x = dataset.normalized_data_x
         self.data_y = dataset.data_y
-        if flag in ["train","vali"]:
+        if flag in ["train","vali"] or self.args.exp_mode in ["SOCV","FOCV"]:
+            #print("get train_slidingwindows ")
             self.slidingwindows = dataset.train_slidingwindows
         else:
+            #print("get test_slidingwindows ")
             self.slidingwindows = dataset.test_slidingwindows
         self.act_weights = dataset.act_weights
 

@@ -35,7 +35,7 @@ class Wavelet_learnable_filter(nn.Module):
             raw_filter = np.zeros((1,1,1,args.windowsize))
             raw_filter[0,0,0,int(args.windowsize/2)] = 1
         raw_filter = torch.tensor(raw_filter)
-        SelectedWavelet = PrepareWavelets(K=args.number_wavelet_filtering, length=args.windowsize)
+        SelectedWavelet = PrepareWavelets(K=args.number_wavelet_filtering, length=args.windowsize, seed=self.args.seed)
         ScaledFilter = FiltersExtention(SelectedWavelet)
         ScaledFilter = torch.cat((raw_filter,ScaledFilter),0)
 
