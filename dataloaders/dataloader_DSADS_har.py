@@ -54,8 +54,8 @@ class DSADS_HAR_DATA(BASE_DATA):
         # These two variables represent whether all sensors can be filtered according to position and sensor type
         # pos_filter ------- >  filter according to position
         # sensor_filter ----->  filter according to the sensor type
-        self.pos_filter         = ["acc","gyro","mag"]
-        self.sensor_filter      = ["T", "RA", "LA", "RL", "LL"]
+        self.pos_filter         = ["T", "RA", "LA", "RL", "LL"]
+        self.sensor_filter      = ["acc","gyro","mag"]
 
 
         # selected_cols will be updated according to user settings. User have to set -- args.pos_select, args.sensor_select---

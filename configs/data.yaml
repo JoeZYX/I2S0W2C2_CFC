@@ -12,6 +12,13 @@ oppo:
   num_channels: 77
   window_seconds: 1
 
+dg:
+  filename: "Daphnet_Dataset/dataset"
+  sampling_freq: 64
+  num_classes: 2
+  num_channels: 9
+  window_seconds: 1
+
 pamap2:
   filename: "PAMAP2_Dataset/Protocol"
   sampling_freq: 33
