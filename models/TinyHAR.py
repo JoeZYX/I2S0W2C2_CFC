@@ -271,20 +271,26 @@ class TinyHAR_Model(nn.Module):
         输入的格式为  Batch, filter_num, length, Sensor_channel        
         输出格式为为  Batch, filter_num, downsampling_length, Sensor_channel
         """
+        filter_num_list=[1]
+        filter_num_step=int(filter_num/nb_conv_layers)
+        for i in range(nb_conv_layers-1):
+            filter_num_list.append((1+i)*filter_num_step)
+        filter_num_list.append(filter_num)
 
         layers_conv = []
         for i in range(nb_conv_layers):
-            if i == 0:
-                in_channel = input_shape[1]
+            in_channel  = filter_num_list[i]
+            out_channel = filter_num_list[i+1]
+            if i%2 == 1:
+                layers_conv.append(nn.Sequential(
+                    nn.Conv2d(in_channel, out_channel, (filter_size, 1),(2,1)),
+                    nn.ReLU(inplace=True),
+                    nn.BatchNorm2d(out_channel)))
             else:
-                in_channel = filter_num
-    
-            layers_conv.append(nn.Sequential(
-                nn.Conv2d(in_channel, filter_num, (filter_size, 1),(2,1)),
-                nn.ReLU(inplace=True),
-                nn.BatchNorm2d(filter_num),
-
-            ))
+                layers_conv.append(nn.Sequential(
+                    nn.Conv2d(in_channel, out_channel, (filter_size, 1),(1,1)),
+                    nn.ReLU(inplace=True),
+                    nn.BatchNorm2d(out_channel)))
         self.layers_conv = nn.ModuleList(layers_conv)
         # 这是给最后时间维度 vectorize的时候用的
         downsampling_length = self.get_the_shape(input_shape)        
