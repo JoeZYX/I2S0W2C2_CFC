@@ -19,6 +19,13 @@ dg:
   num_channels: 9
   window_seconds: 1
 
+uschad:
+  filename: "USC_HAD_Dataset"
+  sampling_freq: 100
+  num_classes: 12
+  num_channels: 6
+  window_seconds: 1
+
 pamap2:
   filename: "PAMAP2_Dataset/Protocol"
   sampling_freq: 33
