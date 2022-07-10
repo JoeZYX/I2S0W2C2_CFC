@@ -12,6 +12,14 @@ oppo:
   num_channels: 77
   window_seconds: 1
 
+
+wisdm:
+  filename: "WISDM_Dataset"
+  sampling_freq: 20
+  num_classes: 6
+  num_channels: 3
+  window_seconds: 5
+
 dg:
   filename: "Daphnet_Dataset/dataset"
   sampling_freq: 64

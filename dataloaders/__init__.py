@@ -63,6 +63,7 @@ from .dataloader_SKODAR_har import SkodaR_HAR_DATA
 from .dataloader_DSADS_har import DSADS_HAR_DATA
 from .dataloader_DG_har import Daphnet_HAR_DATA
 from .dataloader_USCHAD_har import USC_HAD_HAR_DATA
+from .dataloader_WISDM_har import WISDM_HAR_DATA
 data_dict = {"hapt"  : HAPT_HAR_DATA,
              "ear"   : EAR_HAR_DATA,
              "oppo"  : Opportunity_HAR_DATA,
@@ -71,7 +72,8 @@ data_dict = {"hapt"  : HAPT_HAR_DATA,
              "skodar": SkodaR_HAR_DATA,
              "dsads" : DSADS_HAR_DATA,
              "dg"    : Daphnet_HAR_DATA,
-             "uschad": USC_HAD_HAR_DATA}
+             "uschad": USC_HAD_HAR_DATA,
+             "wisdm" : WISDM_HAR_DATA}
 
 class data_set(Dataset):
     def __init__(self, args, dataset, flag):
