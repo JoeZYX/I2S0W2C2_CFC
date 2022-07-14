@@ -142,7 +142,6 @@ class Exp(object):
             setting = "tinyhar_data_{}_seed_{}_windowsize_{}_cvfilter_{}_CI_{}_CA_{}_TI_{}_TA_{}".format(self.args.data_name,
                                                                                                         self.args.seed,
                                                                                                         self.args.windowsize,
-                                                                                                        self.args.wavelet_filtering,
                                                                                                         config["filter_num"],
                                                                                                         self.args.cross_channel_interaction_type,
                                                                                                         self.args.cross_channel_aggregation_type,
