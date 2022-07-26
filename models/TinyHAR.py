@@ -486,7 +486,7 @@ class TinyHAR_Model(nn.Module):
                     nn.BatchNorm2d(out_channel)))
             else:
                 layers_conv.append(nn.Sequential(
-                    nn.Conv2d(in_channel, out_channel, (filter_size, 1),(2,1)),
+                    nn.Conv2d(in_channel, out_channel, (filter_size, 1),(1,1)),
                     nn.ReLU(inplace=True),#))#,
                     nn.BatchNorm2d(out_channel)))
         self.layers_conv = nn.ModuleList(layers_conv)
