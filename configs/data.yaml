@@ -61,9 +61,3 @@ dsads:
   num_classes: 19
   num_channels: 45
   window_seconds: 5
-
-ear:
-  filename: "EAR_Dataset"
-  sampling_freq: 20
-  num_classes: 20
-  num_channels: 20
