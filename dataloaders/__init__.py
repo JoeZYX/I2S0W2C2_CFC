@@ -159,10 +159,12 @@ class data_set(Dataset):
             sample_y = self.class_transform[self.data_y.iloc[start_index:end_index].mode().loc[0]]
             #print(sample_x.shape)
 
-
             sample_x = np.expand_dims(sample_x,0)
-            #print(sample_x.shape)
-            return sample_x, sample_y,sample_y
+            from dataloaders.augmentation import RandomAugment
+            randaug = RandomAugment(3)
+            aug_sample_x = randaug(sample_x[0])
+            # return sample_x, sample_y, sample_y
+            return (sample_x, aug_sample_x), sample_y, sample_y
 
         elif self.args.representation_type == "freq":
 
