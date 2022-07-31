@@ -15,13 +15,22 @@ from typing import List
 def mag_3_signals(x, y, z):# magnitude function redefintion
     return np.array([math.sqrt((x[i]**2+y[i]**2+z[i]**2)) for i in range(len(x))])
 
-
-# x1: a datapoint with all channels
-# x2: a datapoint with all channels
+# x1: all channel values first sample
+# x2: all channel values second sample
 # lambda: mixup parameter
-# returns x: pd.Dataframe - 
-def mixup(x1: pd.DataFrame, x2: pd.DataFrame, _lambda: float=0.5):
-    x = _lambda * x1.values + (1 - _lambda) * x2
+# returns x: all channel values mixed up
+# completed
+def mixup(x1: np.ndarray, x2: np.ndarray, _lambda: float=0.5):
+    x = _lambda * x1 + (1 - _lambda) * x2
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(6,3))
+    plt.plot(x1[:, 0], label='acc_x', c = 'green', linewidth=2)
+    plt.plot(x2[:, 0], c = 'blue', label='other_acc_x', linewidth=2)
+    plt.plot(x[:, 0], c = 'red', linestyle='dashed', label='mixup_acc_x', linewidth=2)
+    plt.legend(fontsize=16)
+    plt.tight_layout()
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
     return x
 
 # x: all channel values

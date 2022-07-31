@@ -4,6 +4,7 @@ import numpy as np
 import os
 import pickle
 from tqdm import tqdm
+from dataloaders.augmentation import mixup
 #from dataloaders.utils import PrepareWavelets,FiltersExtention
 # ----------------- har -----------------
 """
@@ -148,21 +149,33 @@ class data_set(Dataset):
         index = self.window_index[index]
         start_index = self.slidingwindows[index][1]
         end_index = self.slidingwindows[index][2]
+        rand_idx = self.window_index[np.random.randint(0, len(self.window_index))]
+        other_start = self.slidingwindows[rand_idx][1]
+        other_end = self.slidingwindows[rand_idx][2]
 
         if self.args.representation_type == "time":
 
             if self.args.sample_wise ==True:
                 sample_x = np.array(self.data_x.iloc[start_index:end_index, 1:-1].apply(lambda x: (x - np.mean(x)) / (np.max(x) - np.min(x))))
+                other_x = np.array(self.data_x.iloc[other_start:other_end, 1:-1].apply(lambda x: (x - np.mean(x)) / (np.max(x) - np.min(x))))
             else:
                 sample_x = self.data_x.iloc[start_index:end_index, 1:-1].values
+                other_x = self.data_x.iloc[other_start:other_end, 1:-1].values
 
             sample_y = self.class_transform[self.data_y.iloc[start_index:end_index].mode().loc[0]]
+            # print(self.data_y.iloc[start_index:end_index].to_markdown())
+            print(sample_y)
+            print(self.class_transform)
             #print(sample_x.shape)
+            mixup_x = mixup(sample_x, other_x)
 
             sample_x = np.expand_dims(sample_x,0)
+            mixup_x = np.expand_dims(mixup_x,0)
+
             from dataloaders.augmentation import RandomAugment
-            randaug = RandomAugment(3)
+            randaug = RandomAugment(1)
             aug_sample_x = randaug(sample_x[0])
+            
             # return sample_x, sample_y, sample_y
             return (sample_x, aug_sample_x), sample_y, sample_y
 
