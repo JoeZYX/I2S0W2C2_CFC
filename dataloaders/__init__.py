@@ -173,7 +173,22 @@ class data_set(Dataset):
             mixup_x = np.expand_dims(mixup_x,0)
 
             from dataloaders.augmentation import RandomAugment
-            randaug = RandomAugment(1)
+            p = {
+                'jitter': 1.0,
+                'exponential_smoothing': 1.0,
+                'moving_average': 1.0,
+                'magnitude_scaling': 1.0,
+                'magnitude_warp': 1.0,
+                'magnitude_shift': 1.0,
+                'time_warp': 1.0,
+                'window_warp': 1.0,
+                'window_slice': 1.0,
+                'random_sampling': 1.0,
+                'slope_adding': 1.0,
+                }
+            aug_count = np.random.randint(0, 4)
+            print('aug_count', aug_count)
+            randaug = RandomAugment(aug_count, p)
             aug_sample_x = randaug(sample_x[0])
             
             # return sample_x, sample_y, sample_y

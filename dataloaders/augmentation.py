@@ -31,7 +31,7 @@ def cutmix():
     pass
 
 class RandomAugment(object):
-    def __init__(self, transformation_count):
+    def __init__(self, transformation_count, p):
         self.tranformation_count = transformation_count
         self.all_transformations = [
             self.jitter,
@@ -46,6 +46,7 @@ class RandomAugment(object):
             self.random_sampling,
             self.slope_adding,
         ]
+        self.p = p
 
     def __call__(self, org_sample_x):
         # if used with torch, use torch's rng
@@ -55,7 +56,9 @@ class RandomAugment(object):
         )
         for t in transformations:
             print(t)
-            sample_x = t(sample_x)
+            print(self.p[t.__name__])
+            if self.p[t.__name__] > 0.5:
+                sample_x = t(sample_x)
         return np.asarray([sample_x])
 
     # x: all channel values
