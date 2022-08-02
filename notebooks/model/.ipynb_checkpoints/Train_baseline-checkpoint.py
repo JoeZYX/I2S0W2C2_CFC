@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#SBATCH --job-name=WAVELET
+#SBATCH --job-name=BSL
 
 #SBATCH --error=%x.%j.err
 #SBATCH --output=%x.%j.out
@@ -33,9 +33,6 @@ import os
 scaling = float(sys.argv[2])
 data = sys.argv[1]
 
-if scaling == 1.0:
-    scaling = int(1)
-
 # 参数设置
 
 # 训练参数  除了路径 其他不要变
@@ -58,7 +55,7 @@ args.drop_transition  = False
 args.datanorm_type    = "standardization" # None ,"standardization", "minmax"
 
 
-args.batch_size       = 256                                                     
+args.batch_size       = 256                                                    
 args.shuffle          = True
 args.drop_last        = False
 args.train_vali_quote = 0.90                                           
@@ -87,20 +84,14 @@ args.criterion               = "CrossEntropy"
 
 args.data_name                        =  data
 
-args.wavelet_filtering                = True
-args.wavelet_filtering_regularization = True
-args.wavelet_filtering_finetuning     = True
-args.wavelet_filtering_finetuning_percent = 1
-args.wavelet_filtering_learnable      = False
-args.wavelet_filtering_layernorm      = False
-
-args.regulatization_tradeoff          = 0
-args.number_wavelet_filtering         = 10
+args.wavelet_filtering                = False
+args.wavelet_filtering_regularization = False
+args.wavelet_filtering_finetuning     = False
 
 
 args.difference       = False 
-args.filtering        =  False
-args.magnitude        =  False
+args.filtering        = False
+args.magnitude        = False
 args.weighted_sampler = False
 
 
@@ -128,10 +119,6 @@ args.input_length    =  args.windowsize
 # input information
 args.c_in            = config["num_channels"]
 
-
-if args.difference:
-    args.c_in = args.c_in*2
-    
 if args.wavelet_filtering :
     
     if args.windowsize%2==1:
@@ -143,17 +130,10 @@ if args.wavelet_filtering :
 else:
     args.f_in            =  1
 
-
-
 ## 模型参数
 
 args.filter_scaling_factor = scaling
-args.model_type              = "deepconvlstm"#"tinyhar"#"sahar" #"deepconvlstm"
-
-# args.cross_channel_interaction_type = "attn"
-# args.cross_channel_aggregation_type = "filter"
-# args.temporal_info_interaction_type
-# args.temporal_info_aggregation_type
+args.model_type            = "deepconvlstm"
 
 # 实验
 
@@ -161,4 +141,6 @@ for seed in [1,2,3,4,5]:
     args.seed = seed
     exp = Exp(args)
     exp.train()
+
+
 

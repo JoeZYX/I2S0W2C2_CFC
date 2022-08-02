@@ -1,3 +1,21 @@
+#!/usr/bin/env python
+
+#SBATCH --job-name=BSL
+
+#SBATCH --error=%x.%j.err
+#SBATCH --output=%x.%j.out
+
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=hzhao@teco.edu
+
+#SBATCH --export=ALL
+
+#SBATCH --time=48:00:00
+
+#SBATCH --partition=sdil
+#SBATCH --gres=gpu:1
+
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -12,13 +30,14 @@ import torch
 import yaml
 import os
 
-scaling = float(sys.argv[1])
-data = sys.argv[2]
+scaling = float(sys.argv[2])
+data = sys.argv[1]
 
+if scaling == 1.0:
+    scaling = int(1)
 # 参数设置
 
-# 训练参数 
-除了路径 其他不要变
+# 训练参数  除了路径 其他不要变
 
 class dotdict(dict):
     """dot.notation access to dictionary attributes"""
