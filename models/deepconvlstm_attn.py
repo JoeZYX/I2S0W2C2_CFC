@@ -41,28 +41,29 @@ class DeepConvLSTM_ATTN(nn.Module):
     def __init__(self, 
                  input_shape, 
                  nb_classes,
-                 filter_scaling_factor = 1,
-                 nb_conv_blocks        = 2,
-                 nb_filters            = 64,
-                 dilation              = 1,
-                 batch_norm            = False,
-                 filter_width          = 5,
-                 nb_layers_lstm        = 2,
-                 drop_prob             = 0.5,
-                 nb_units_lstm         = 128):
+                 filter_scaling_factor,
+                 config):
+                 #nb_conv_blocks        = 2,
+                 #nb_filters            = 64,
+                 #dilation              = 1,
+                 #batch_norm            = False,
+                 #filter_width          = 5,
+                 #nb_layers_lstm        = 2,
+                 #drop_prob             = 0.5,
+                 #nb_units_lstm         = 128):
         """
         DeepConvLSTM model based on architecture suggested by Ordonez and Roggen (https://www.mdpi.com/1424-8220/16/1/115)
         
         """
         super(DeepConvLSTM_ATTN, self).__init__()
-        self.nb_conv_blocks = nb_conv_blocks
-        self.nb_filters     = int(nb_filters*filter_scaling_factor)
-        self.dilation       = dilation
-        self.batch_norm     = batch_norm
-        self.filter_width   = filter_width
-        self.nb_layers_lstm = nb_layers_lstm
-        self.drop_prob      = drop_prob
-        self.nb_units_lstm  = int(nb_units_lstm*filter_scaling_factor)
+        self.nb_conv_blocks = config["nb_conv_blocks"]
+        self.nb_filters     = int(config["nb_filters"]*filter_scaling_factor)
+        self.dilation       = config["dilation"]
+        self.batch_norm     = bool(config["batch_norm"])
+        self.filter_width   = config["filter_width"]
+        self.nb_layers_lstm = config["nb_layers_lstm"]
+        self.drop_prob      = config["drop_prob"]
+        self.nb_units_lstm  = int(config["nb_units_lstm"]*filter_scaling_factor)
         
         
         self.nb_channels = input_shape[3]

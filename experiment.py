@@ -110,6 +110,24 @@ class Exp(object):
                                                                                                                                                         self.args.wavelet_filtering_regularization,
                                                                                                                                                         self.args.wavelet_filtering_learnable )
             return setting
+
+        if self.args.model_type == "deepconvlstm_attn":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm_attn"]
+            setting = "deepconvlstm_attn_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_lstmfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
+                                                                                                                                                          self.args.seed,
+                                                                                                                                                          self.args.windowsize,
+                                                                                                                                                          self.args.wavelet_filtering,
+                                                                                                                                                          self.args.filter_scaling_factor,
+                                                                                                                                                          config["nb_filters"],
+                                                                                                                                                          config["nb_units_lstm"],
+                                                                                                                                                          self.args.wavelet_filtering_regularization,
+                                                                                                                                                          self.args.wavelet_filtering_learnable )
+            return setting
+
+
+
+
         elif self.args.model_type == "attend":
             config_file = open('../../configs/model.yaml', mode='r')
             config = yaml.load(config_file, Loader=yaml.FullLoader)["attend"]

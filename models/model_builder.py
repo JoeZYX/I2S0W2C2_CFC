@@ -121,9 +121,12 @@ class model_builder(nn.Module):
             print("Build the AttendDiscriminate model!")
 
         elif self.args.model_type == "deepconvlstm_attn":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm_attn"]
             self.model  = DeepConvLSTM_ATTN((1,f_in, self.args.input_length, self.args.c_in ), 
                                             self.args.num_classes,
-                                            self.args.filter_scaling_factor)
+                                            self.args.filter_scaling_factor,
+                                            config)
             print("Build the deepconvlstm_attn model!")
 
         elif self.args.model_type == "sahar":
