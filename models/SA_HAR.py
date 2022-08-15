@@ -40,9 +40,9 @@ class ConvBlock(nn.Module):
 class SensorAttention(nn.Module):
     def __init__(self, input_shape, nb_filters ):
         super(SensorAttention, self).__init__()
-        self.ln = nn.LayerNorm(input_shape[3])        #  length维度
+        self.ln = nn.LayerNorm(input_shape[3])        #  channel的维度
         
-        self.conv_1 = nn.Conv2d(in_channels=1, out_channels=nb_filters, kernel_size=(5,1), dilation=1, padding='same')
+        self.conv_1 = nn.Conv2d(in_channels=1, out_channels=nb_filters, kernel_size=3, dilation=2, padding='same')
         self.conv_f = nn.Conv2d(in_channels=nb_filters, out_channels=1, kernel_size=1, padding='same')
         self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=3)
@@ -164,7 +164,11 @@ class SA_HAR(nn.Module):
 
         self.nb_filters     = int(filter_scaling_factor*config["nb_filters"])
 
-        self.first_conv = ConvBlock(5, input_shape[1], self.nb_filters, 1, True).double()
+        self.first_conv = ConvBlock(filter_width=5, 
+                                    input_filters=input_shape[1], 
+                                    nb_filters=self.nb_filters, 
+                                    dilation=1, 
+                                    batch_norm=True).double()
         
         self.SensorAttention = SensorAttention(input_shape,self.nb_filters)
         self.conv1d = nn.Conv1d(in_channels=input_shape[3], out_channels=self.nb_filters, kernel_size=1)
