@@ -6,6 +6,7 @@ from models.deepconvlstm_attn import DeepConvLSTM_ATTN
 from models.crossatten.model import Cross_TS,TSTransformer_Basic
 from models.TinyHAR import TinyHAR_Model
 from models.SA_HAR import SA_HAR
+from models.mcnn import MCNN
 from dataloaders.utils import PrepareWavelets,FiltersExtention
 # ------- import other packages ----------------
 import torch
@@ -119,7 +120,14 @@ class model_builder(nn.Module):
                                              self.args.filter_scaling_factor,
                                              config)
             print("Build the AttendDiscriminate model!")
-
+        elif self.args.model_type == "mcnn":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["mcnn"]
+            self.model  = MCNN((1,f_in, self.args.input_length, self.args.c_in ), 
+                                self.args.num_classes,
+                                self.args.filter_scaling_factor,
+                                config)
+            print("Build the Milti-Branch CNN model!")
         elif self.args.model_type == "deepconvlstm_attn":
             config_file = open('../../configs/model.yaml', mode='r')
             config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm_attn"]

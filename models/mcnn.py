@@ -81,47 +81,55 @@ class MCNN(nn.Module):
 
         
         self.conv_blocks = nn.ModuleList(self.conv_blocks)
+        shape = self.get_the_shape(input_shape)
+        final_length  = shape[2]
+        # B F L* C
 
         # define dropout layer
         self.dropout = nn.Dropout(self.drop_prob)
         
-        # attention
-
+        # Sensor Fusion
+        self.activation = nn.ReLU() 
+        self.fc_sensor_fusion = nn.Linear(self.nb_filters*self.nb_channels ,2*self.nb_filters)
+        
+        # Temporal Fusion   
+        self.flatten = nn.Flatten()
+        self.fc_temporal_fusion = nn.Linear(2*self.nb_filters*final_length ,self.nb_filters*2)
+        
         # define classifier
-        self.fc = nn.Linear(self.nb_units_lstm, self.nb_classes)
+        self.fc_prediction = nn.Linear(self.nb_filters*2, self.nb_classes)
+
+
+    def get_the_shape(self, input_shape):
+        x = torch.rand(input_shape)
+        for conv_block in self.conv_blocks:
+            x = conv_block(x)    
+
+        return x.shape
 
     def forward(self, x):
-        # reshape data for convolutions
-        # B,L,C = x.shape
-        # x = x.view(B, 1, L, C)
+
 
         for i, conv_block in enumerate(self.conv_blocks):
             x = conv_block(x)
+        # B F L* C
 
-        final_seq_len = x.shape[2]
-
-        # permute dimensions and reshape for LSTM
+    
         x = x.permute(0, 2, 1, 3)
+        # B L*  F C
 
-        x = x.reshape(-1, final_seq_len, self.nb_filters * self.nb_channels)
-
+        x = x.reshape(x.shape[0], x.shape[1], self.nb_filters * self.nb_channels)
         x = self.dropout(x)
-        
+        # B L*  F*C
 
-        for lstm_layer in self.lstm_layers:
-            x, _ = lstm_layer(x)
+        x = self.activation(self.fc_sensor_fusion(x)) 
+        # B L*  2*C
 
-        context = x[:, :-1, :]
-        out = x[:, -1, :]
+        x = self.flatten(x)
+        x = self.activation(self.fc_temporal_fusion(x)) # B L C
 
-        uit = self.linear_1(context)
-        uit = self.tanh(uit)
-        uit = self.dropout_2(uit)
-        ait = self.linear_2(uit)
-        attn = torch.matmul(F.softmax(ait, dim=1).transpose(-1, -2),context).squeeze(-2)
 
-        out = self.fc(out+attn)
-
+        out = self.fc_prediction(x)    
 
         return out
 

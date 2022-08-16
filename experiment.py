@@ -126,7 +126,18 @@ class Exp(object):
             return setting
 
 
-
+        if self.args.model_type == "mcnn":
+            config_file = open('../../configs/model.yaml', mode='r')
+            config = yaml.load(config_file, Loader=yaml.FullLoader)["mcnn"]
+            setting = "mcnn_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
+                                                                                                                                              self.args.seed,
+                                                                                                                                              self.args.windowsize,
+                                                                                                                                              self.args.wavelet_filtering,
+                                                                                                                                              self.args.filter_scaling_factor,
+                                                                                                                                              config["nb_filters"],
+                                                                                                                                              self.args.wavelet_filtering_regularization,
+                                                                                                                                              self.args.wavelet_filtering_learnable )
+            return setting
 
         elif self.args.model_type == "attend":
             config_file = open('../../configs/model.yaml', mode='r')
