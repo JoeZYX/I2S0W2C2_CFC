@@ -54,12 +54,14 @@ class RandomAugment(object):
         transformations = np.random.choice(
             self.all_transformations, size=self.tranformation_count, replace=False
         )
+        used = []
         for t in transformations:
-            print(t)
-            print(self.p[t.__name__])
+            # print(t)
+            # print(self.p[t.__name__])
             if self.p[t.__name__] > 0.5:
                 sample_x = t(sample_x)
-        return np.asarray([sample_x])
+                used.append(t)
+        return (np.asarray([sample_x]), used)
 
     # x: all channel values
     # sigma: determines the strength of noise

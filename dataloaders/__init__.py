@@ -81,6 +81,21 @@ class data_set(Dataset):
         self.load_all = args.load_all
         self.data_x = dataset.normalized_data_x
         self.data_y = dataset.data_y
+        self.p = {
+            'jitter': 1.0,
+            'exponential_smoothing': 1.0,
+            'moving_average': 1.0,
+            'magnitude_scaling': 1.0,
+            'magnitude_warp': 1.0,
+            'magnitude_shift': 1.0,
+            'time_warp': 1.0,
+            'window_warp': 1.0,
+            'window_slice': 1.0,
+            'random_sampling': 1.0,
+            'slope_adding': 1.0,
+        }
+        self.mixup_combinations_per_idx = {}
+        self.used_randaugs_per_idx = {}
         if flag in ["train","vali"]:
             self.slidingwindows = dataset.train_slidingwindows
         else:
@@ -164,10 +179,6 @@ class data_set(Dataset):
                 other_x = self.data_x.iloc[other_start:other_end, 1:-1].values
 
             sample_y = self.class_transform[self.data_y.iloc[start_index:end_index].mode().loc[0]]
-            # print(self.data_y.iloc[start_index:end_index].to_markdown())
-            # print('sample_y', sample_y)
-            print(self.class_transform)
-            #print(sample_x.shape)
             mixup_x = mixup(sample_x, other_x)
             
 
@@ -175,26 +186,18 @@ class data_set(Dataset):
             mixup_x = np.expand_dims(mixup_x,0)
 
             from dataloaders.augmentation import RandomAugment
-            p = {
-                'jitter': 1.0,
-                'exponential_smoothing': 1.0,
-                'moving_average': 1.0,
-                'magnitude_scaling': 1.0,
-                'magnitude_warp': 1.0,
-                'magnitude_shift': 1.0,
-                'time_warp': 1.0,
-                'window_warp': 1.0,
-                'window_slice': 1.0,
-                'random_sampling': 1.0,
-                'slope_adding': 1.0,
-                }
+
             aug_count = np.random.randint(0, 4)
-            print('aug_count', aug_count)
-            randaug = RandomAugment(aug_count, p)
-            aug_sample_x = randaug(sample_x[0])
+            # print('aug_count', aug_count)
+            randaug = RandomAugment(aug_count, self.p)
+            aug_sample_x, used_augs = randaug(sample_x[0])
+            
+            self.used_randaugs_per_idx[index] = used_augs
+            self.mixup_combinations_per_idx[index] = rand_idx
             
             # return sample_x, sample_y, sample_y
-            return (sample_x, aug_sample_x), sample_y, sample_y
+            # return (sample_x, aug_sample_x), sample_y, sample_y
+            return aug_sample_x, sample_y, sample_y
 
         elif self.args.representation_type == "freq":
 
