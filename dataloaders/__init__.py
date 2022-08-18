@@ -149,6 +149,7 @@ class data_set(Dataset):
         index = self.window_index[index]
         start_index = self.slidingwindows[index][1]
         end_index = self.slidingwindows[index][2]
+
         rand_idx = self.window_index[np.random.randint(0, len(self.window_index))]
         other_start = self.slidingwindows[rand_idx][1]
         other_end = self.slidingwindows[rand_idx][2]
@@ -164,10 +165,11 @@ class data_set(Dataset):
 
             sample_y = self.class_transform[self.data_y.iloc[start_index:end_index].mode().loc[0]]
             # print(self.data_y.iloc[start_index:end_index].to_markdown())
-            print(sample_y)
+            # print('sample_y', sample_y)
             print(self.class_transform)
             #print(sample_x.shape)
             mixup_x = mixup(sample_x, other_x)
+            
 
             sample_x = np.expand_dims(sample_x,0)
             mixup_x = np.expand_dims(mixup_x,0)
