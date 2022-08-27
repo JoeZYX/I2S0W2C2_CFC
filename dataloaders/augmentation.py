@@ -11,14 +11,14 @@ from typing import List
 def mixup(x1: np.ndarray, x2: np.ndarray, _lambda: float=0.5):
     x = _lambda * x1 + (1 - _lambda) * x2
     import matplotlib.pyplot as plt
-    # plt.figure(figsize=(6,3))
-    # plt.plot(x1[:, 0], label='acc_x', c = 'green', linewidth=2)
-    # plt.plot(x2[:, 0], c = 'blue', label='other_acc_x', linewidth=2)
-    # plt.plot(x[:, 0], c = 'red', linestyle='dashed', label='mixup_acc_x', linewidth=2)
-    # plt.legend(fontsize=16)
-    # plt.tight_layout()
-    # plt.xticks(fontsize=12)
-    # plt.yticks(fontsize=12)
+    plt.figure(figsize=(6,3))
+    plt.plot(x1[:, 0], label='acc_x', c = 'green', linewidth=2)
+    plt.plot(x2[:, 0], c = 'blue', label='other_acc_x', linewidth=2)
+    plt.plot(x[:, 0], c = 'red', linestyle='dashed', label='mixup_acc_x', linewidth=2)
+    plt.legend(fontsize=16)
+    plt.tight_layout()
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
     return x
 
 # TODO https://mohcinemadkour.github.io/posts/2019/10/Machine%20Learning,%20timeseriesAI,%20Time%20Series%20Classification,%20fastai_timeseries,%20data%20augmentation/
