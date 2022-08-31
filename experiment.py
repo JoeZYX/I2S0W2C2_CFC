@@ -235,7 +235,7 @@ class Exp(object):
                         if "cross" in self.args.model_type:
                             batch_x1 = batch_x1.double().to(self.device)
                             batch_x2 = batch_x2.double().to(self.device)
-                            batch_y = batch_y.long().to(self.device)
+                            batch_y = batch_y.float().to(self.device)
                             # model prediction
                             if self.args.output_attention:
                                 outputs = self.model(batch_x1,batch_x2)[0]
@@ -243,7 +243,7 @@ class Exp(object):
                                 outputs = self.model(batch_x1,batch_x2)
                         else:
                             batch_x1 = batch_x1.double().to(self.device)
-                            batch_y = batch_y.long().to(self.device)
+                            batch_y = batch_y.float().to(self.device)
 
                             if self.args.mixup:
                                 batch_x1, batch_y = mixup_data(batch_x1, batch_y, self.args.alpha)
@@ -374,7 +374,12 @@ class Exp(object):
                         for i, (batch_x1,batch_x2,batch_y) in enumerate(train_loader):
                             batch_x1 = batch_x1.double().to(self.device)
 
-                            batch_y = batch_y.long().to(self.device)
+                            print('exp')
+                            print(type(batch_y))
+                            print(batch_y)
+                            batch_y = batch_y.float().to(self.device)
+                            print(type(batch_y))
+                            print(batch_y)
                             outputs = new_model(batch_x1)
 
                             loss = criterion(outputs, batch_y)
@@ -443,7 +448,7 @@ class Exp(object):
             if "cross" in self.args.model_type:
                 batch_x1 = batch_x1.double().to(self.device)
                 batch_x2 = batch_x2.double().to(self.device)
-                batch_y = batch_y.long().to(self.device)
+                batch_y = batch_y.float().to(self.device)
                 # model prediction
                 if self.args.output_attention:
                     outputs = self.model(batch_x1,batch_x2)[0]
@@ -451,7 +456,7 @@ class Exp(object):
                     outputs = self.model(batch_x1,batch_x2)
             else:
                 batch_x1 = batch_x1.double().to(self.device)
-                batch_y = batch_y.long().to(self.device)
+                batch_y = batch_y.float().to(self.device)
 
                 # model prediction
                 if self.args.output_attention:
@@ -482,7 +487,7 @@ class Exp(object):
                 if "cross" in self.args.model_type:
                     batch_x1 = batch_x1.double().to(self.device)
                     batch_x2 = batch_x2.double().to(self.device)
-                    batch_y = batch_y.long().to(self.device)
+                    batch_y = batch_y.float().to(self.device)
                     # model prediction
                     if self.args.output_attention:
                         outputs = model(batch_x1,batch_x2)[0]
@@ -493,7 +498,7 @@ class Exp(object):
                         batch_x1 = batch_x1.double().to(self.device)
                     else:
                         batch_x1 = batch_x1[:, selected_index.tolist(),:,:].double().to(self.device)
-                    batch_y = batch_y.long().to(self.device)
+                    batch_y = batch_y.float().to(self.device)
 
                     # model prediction
                     if self.args.output_attention:
@@ -509,9 +514,14 @@ class Exp(object):
                 total_loss.append(loss.cpu())
 				
                 preds.extend(list(np.argmax(outputs.detach().cpu().numpy(),axis=1)))
-                trues.extend(list(batch_y.detach().cpu().numpy()))   
+                trues.extend(list(np.argmax(batch_y.detach().cpu().numpy(),axis=1)))  # not sure about the side-effects
 				
         total_loss = np.average(total_loss)
+        # print(type(preds))
+        # print(preds)
+        # print('-----------')
+        # print(type(trues))
+        # print(trues)
         acc = accuracy_score(preds,trues)
         #f_1 = f1_score(trues, preds)
         f_w = f1_score(trues, preds, average='weighted')
