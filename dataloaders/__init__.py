@@ -215,7 +215,8 @@ class data_set(Dataset):
             # return sample_x, sample_y, sample_y
             # print(encoded_y)
             # return sample_x, encoded_y, encoded_y
-            return aug_sample_x, mixup_y, mixup_y
+            # return aug_sample_x, mixup_y, mixup_y
+            return sample_x, encoded_y, encoded_y
             
 
         elif self.args.representation_type == "freq":
