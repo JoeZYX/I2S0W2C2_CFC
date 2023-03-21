@@ -4,6 +4,10 @@ import numpy as np
 import os
 import pickle
 from tqdm import tqdm
+import pandas as pd
+from dataloaders.augmentation import mixup
+from dataloaders.augmentation import RandomAugment
+
 #from dataloaders.utils import PrepareWavelets,FiltersExtention
 # ----------------- har -----------------
 """
@@ -134,6 +138,8 @@ class data_set(Dataset):
         classes = dataset.no_drop_activites
         self.class_transform = {x: i for i, x in enumerate(classes)}
         self.class_back_transform = {i: x for i, x in enumerate(classes)}
+        self.one_hot_encoding = {x: np.asarray([1.0 if i == k else 0 for k in range(len(classes))]) for i, x in enumerate(classes)}	
+        self.inverse_hot_encoding = lambda c : np.argmax(c)
         self.input_length = self.slidingwindows[0][2]-self.slidingwindows[0][1]
         self.channel_in = self.data_x.shape[1]-2
 
@@ -157,6 +163,10 @@ class data_set(Dataset):
         index = self.window_index[index]
         start_index = self.slidingwindows[index][1]
         end_index = self.slidingwindows[index][2]
+        
+        rand_idx = self.window_index[np.random.randint(0, len(self.window_index))]	
+        other_start = self.slidingwindows[rand_idx][1]
+        other_end = self.slidingwindows[rand_idx][2]
 
         if self.args.representation_type == "time":
 
@@ -166,15 +176,39 @@ class data_set(Dataset):
                 sample_x = self.data_x.iloc[start_index:end_index, 1:-1].values
 
             sample_y = self.class_transform[self.data_y.iloc[start_index:end_index].mode().loc[0]]
-            #print(sample_x.shape)
-
+            encoded_y = self.one_hot_encoding[self.data_y.iloc[start_index:end_index].mode().loc[0]]
 
             sample_x = np.expand_dims(sample_x,0)
-            #print(sample_x.shape)
-            return sample_x, sample_y,sample_y
+            if self.flag != 'train':	
+                return sample_x, encoded_y, encoded_y
+            
+            if self.args.sample_wise == True: 
+                other_x = np.array(self.data_x.iloc[other_start:other_end, 1:-1].apply(lambda x: (x - np.mean(x)) / (np.max(x) - np.min(x))))
+            else:
+                other_x = self.data_x.iloc[other_start:other_end, 1:-1].values
+            
+            other_encoded_y = self.one_hot_encoding[self.data_y.iloc[other_start:other_end].mode().loc[0]]
+            
+            ##################### MIXUP AUGMENTATION ############################
+            mixup_x = sample_x	
+            mixup_y = encoded_y
+            
+            rng = np.random.random()	
+            if self.args.mixup_p > rng:	
+                mixup_x = mixup(sample_x, other_x, self.args.mixup_lambda)	
+                # mixup_x = np.expand_dims(mixup_x, 0)	
+                mixup_y = mixup(encoded_y, other_encoded_y, self.args.mixup_lambda)	
+
+            ################### RANDOM AUGMENTATIONS #############################
+            aug_count = np.random.randint(0, self.args.max_randaug_cnt)
+            randaug = RandomAugment(aug_count, self.args.p)
+            
+            aug_sample_x = randaug(mixup_x[0])	
+	
+            return aug_sample_x, mixup_y, mixup_y
 
         elif self.args.representation_type == "freq":
-
+            raise NotImplementedError()
             if self.load_all:
                     sample_x = self.data_freq[self.freq_file_name[index]]
             else:
@@ -186,7 +220,7 @@ class data_set(Dataset):
             return sample_x, sample_y,sample_y
 
         else:
-
+            raise NotImplementedError()
             if self.args.sample_wise ==True:
                 sample_ts_x = np.array(self.data_x.iloc[start_index:end_index, 1:-1].apply(lambda x: (x - np.mean(x)) / (np.max(x) - np.min(x))))
             else:
