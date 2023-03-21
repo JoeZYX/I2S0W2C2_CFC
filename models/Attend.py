@@ -100,9 +100,9 @@ class FeatureExtractor(nn.Module):
         super(FeatureExtractor, self).__init__()
 
         self.conv1 = nn.Conv2d(input_shape[1], filter_num, (filter_size, 1))
-        self.conv2 = nn.Conv2d(filter_num, filter_num, (filter_size, 1))
+        self.conv2 = nn.Conv2d(filter_num, filter_num, (filter_size, 1), stride=(2,1))
         self.conv3 = nn.Conv2d(filter_num, filter_num, (filter_size, 1))
-        self.conv4 = nn.Conv2d(filter_num, filter_num, (filter_size, 1))
+        self.conv4 = nn.Conv2d(filter_num, filter_num, (filter_size, 1), stride=(2,1))
 
         self.activation = nn.ReLU() if activation == "ReLU" else nn.Tanh()
 
