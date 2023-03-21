@@ -84,6 +84,7 @@ class model_builder(nn.Module):
 
 
         if self.args.wavelet_filtering:
+            raise NotImplementedError()
             self.wave_conv = Wavelet_learnable_filter(args, f_in)
 
 
@@ -164,6 +165,7 @@ class model_builder(nn.Module):
         #    x = self.pre_conv(x)
 
         if self.args.wavelet_filtering:
+            raise NotImplementedError()
             x = self.wave_conv(x)
             if self.args.wavelet_filtering_regularization:
                 x = x * self.gamma
