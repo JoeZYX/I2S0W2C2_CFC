@@ -195,9 +195,9 @@ class data_set(Dataset):
             
             rng = np.random.random()	
             if self.args.mixup_p > rng:	
-                mixup_x = mixup(sample_x, other_x, self.args.mixup_lambda)	
+                mixup_x = mixup(sample_x, other_x, self.args.mixup_alpha)	
                 # mixup_x = np.expand_dims(mixup_x, 0)	
-                mixup_y = mixup(encoded_y, other_encoded_y, self.args.mixup_lambda)	
+                mixup_y = mixup(encoded_y, other_encoded_y, self.args.mixup_alpha)	
 
             ################### RANDOM AUGMENTATIONS #############################
             aug_count = np.random.randint(0, self.args.max_randaug_cnt)
