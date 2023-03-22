@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from typing import List
-import random
 from scipy.interpolate import CubicSpline
 
 
@@ -249,9 +248,7 @@ class RandomAugment(object):
         if target_len >= x.shape[1]:
             return x
 
-        index_list = list(np.arange(x.shape[1]))
-        # TODO: We use random instead of np.random here, maybe change it to np.random!
-        sampled_index = random.sample(index_list, target_len)
+        sampled_index = np.random.choice(x.shape[1], target_len, replace=False)
         sampled_index = sorted(sampled_index)
 
         ret = np.zeros_like(x)
