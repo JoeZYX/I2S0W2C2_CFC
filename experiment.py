@@ -97,8 +97,18 @@ class Exp(object):
 
 
     def get_setting_name(self):
+        config_file = open('./configs/model.yaml', mode='r')
+        config = yaml.load(config_file, Loader=yaml.FullLoader)[self.args.model_type]
+        setting = "{}-{}-seed={}-wndsz={}-chnl={}-pre={}-rnd_p={}-rnd_cnt={}-mix_p={}-mix_al={}".format(
+            self.args.model_type, self.args.data_name, self.args.seed,
+            self.args.windowsize, self.args.use_channel,
+            self.args.predef_rndaug, self.args.rnd_aug_prob,
+            self.args.max_randaug_cnt, self.args.mixup_p,
+            self.args.mixup_alpha)
+        return setting
+
         if self.args.model_type == "deepconvlstm":
-            config_file = open('../../configs/model.yaml', mode='r')
+            config_file = open('./configs/model.yaml', mode='r')
             config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm"]
             setting = "deepconvlstm_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_lstmfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
                                                                                                                                                         self.args.seed,
@@ -112,7 +122,7 @@ class Exp(object):
             return setting
 
         if self.args.model_type == "deepconvlstm_attn":
-            config_file = open('../../configs/model.yaml', mode='r')
+            config_file = open('./configs/model.yaml', mode='r')
             config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm_attn"]
             setting = "deepconvlstm_attn_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_lstmfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
                                                                                                                                                           self.args.seed,
@@ -127,7 +137,7 @@ class Exp(object):
 
 
         if self.args.model_type == "mcnn":
-            config_file = open('../../configs/model.yaml', mode='r')
+            config_file = open('./configs/model.yaml', mode='r')
             config = yaml.load(config_file, Loader=yaml.FullLoader)["mcnn"]
             setting = "mcnn_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
                                                                                                                                               self.args.seed,
@@ -140,7 +150,7 @@ class Exp(object):
             return setting
 
         elif self.args.model_type == "attend":
-            config_file = open('../../configs/model.yaml', mode='r')
+            config_file = open('./configs/model.yaml', mode='r')
             config = yaml.load(config_file, Loader=yaml.FullLoader)["attend"]
             setting = "attend_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_grufilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
                                                                                                                                                self.args.seed,
@@ -153,7 +163,7 @@ class Exp(object):
                                                                                                                                                self.args.wavelet_filtering_learnable)
             return setting
         elif self.args.model_type == "sahar":
-            config_file = open('../../configs/model.yaml', mode='r')
+            config_file = open('./configs/model.yaml', mode='r')
             config = yaml.load(config_file, Loader=yaml.FullLoader)["sahar"]
             setting = "sahar_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_grufilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
                                                                                                                                               self.args.seed,
@@ -166,7 +176,7 @@ class Exp(object):
                                                                                                                                               self.args.wavelet_filtering_learnable)
             return setting
         elif self.args.model_type == "tinyhar":
-            config_file = open('../../configs/model.yaml', mode='r')
+            config_file = open('./configs/model.yaml', mode='r')
             config = yaml.load(config_file, Loader=yaml.FullLoader)["tinyhar"]
             setting = "tinyhar_data_{}_seed_{}_windowsize_{}_cvfilter_{}_CI_{}_CA_{}_TI_{}_TA_{}".format(self.args.data_name,
                                                                                                         self.args.seed,
@@ -318,7 +328,7 @@ class Exp(object):
                         #        outputs = self.model(batch_x1,batch_x2)
                         #else:
                         batch_x1 = batch_x1.double().to(self.device) #--
-                        batch_y = batch_y.long().to(self.device) #--
+                        batch_y = batch_y.float().to(self.device) #-- TODO: change to float if training doesn't work!
 
                         #    if self.args.mixup:
                         #        batch_x1, batch_y = mixup_data(batch_x1, batch_y, self.args.alpha)
@@ -336,6 +346,7 @@ class Exp(object):
                         loss = criterion(outputs, batch_y)  #--
 
                         if self.args.wavelet_filtering and self.args.wavelet_filtering_regularization:
+                            raise NotImplementedError()
                             reg_loss = 0
                             for name,parameter in self.model.named_parameters():
                                 if "gamma" in name:
@@ -394,6 +405,7 @@ class Exp(object):
             # ------------------------------ code for  regularization and fine tuning -----------------------------------------------------------------
 
             if self.args.wavelet_filtering_finetuning:
+                raise NotImplementedError()
                 finetuned_score_log_file_name = os.path.join(self.path, "finetuned_score.txt")
                 if skip_finetuning:
                     print("================Skip the {} CV Experiment Fine Tuning================".format(iter))
@@ -517,7 +529,7 @@ class Exp(object):
             if "cross" in self.args.model_type:
                 batch_x1 = batch_x1.double().to(self.device)
                 batch_x2 = batch_x2.double().to(self.device)
-                batch_y = batch_y.long().to(self.device)
+                batch_y = batch_y.float().to(self.device) # TODO: change it to float if training doesn't work!
                 # model prediction
                 if self.args.output_attention:
                     outputs = self.model(batch_x1,batch_x2)[0]
@@ -525,7 +537,7 @@ class Exp(object):
                     outputs = self.model(batch_x1,batch_x2)
             else:
                 batch_x1 = batch_x1.double().to(self.device)
-                batch_y = batch_y.long().to(self.device)
+                batch_y = batch_y.float().to(self.device) # TODO: change it to float if training doesn't work!
 
                 # model prediction
                 if self.args.output_attention:
@@ -534,8 +546,8 @@ class Exp(object):
                     outputs = self.model(batch_x1)
 
             preds.extend(list(np.argmax(outputs.detach().cpu().numpy(),axis=1)))
-            trues.extend(list(batch_y.detach().cpu().numpy())) 
-		
+            trues.extend(list(batch_y.detach().cpu().numpy()))
+
         acc = accuracy_score(preds,trues)
         f_w = f1_score(trues, preds, average='weighted')
         f_macro = f1_score(trues, preds, average='macro')
@@ -556,7 +568,7 @@ class Exp(object):
                 if "cross" in self.args.model_type:
                     batch_x1 = batch_x1.double().to(self.device)
                     batch_x2 = batch_x2.double().to(self.device)
-                    batch_y = batch_y.long().to(self.device)
+                    batch_y = batch_y.long().to(self.device) # TODO: change it to float if training doesn't work!
                     # model prediction
                     if self.args.output_attention:
                         outputs = model(batch_x1,batch_x2)[0]
@@ -567,7 +579,7 @@ class Exp(object):
                         batch_x1 = batch_x1.double().to(self.device)
                     else:
                         batch_x1 = batch_x1[:, selected_index.tolist(),:,:].double().to(self.device)
-                    batch_y = batch_y.long().to(self.device)
+                    batch_y = batch_y.float().to(self.device)
 
                     # model prediction
                     if self.args.output_attention:
@@ -579,12 +591,12 @@ class Exp(object):
                 pred = outputs.detach()#.cpu()
                 true = batch_y.detach()#.cpu()
 
-                loss = criterion(pred, true) 
+                loss = criterion(pred, true.argmax(dim=1))
                 total_loss.append(loss.cpu())
-				
+
                 preds.extend(list(np.argmax(outputs.detach().cpu().numpy(),axis=1)))
-                trues.extend(list(batch_y.detach().cpu().numpy()))   
-				
+                trues.extend(list(np.argmax(batch_y.detach().cpu().numpy(),axis=1)))
+
         total_loss = np.average(total_loss)
         acc = accuracy_score(preds,trues)
         #f_1 = f1_score(trues, preds)
