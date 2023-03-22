@@ -53,9 +53,17 @@ class BASE_DATA():
         self.window_save_path       = args.window_save_path
         self.data_name              = args.data_name
 
-        window_save_path = os.path.join(self.window_save_path,self.data_name)
+        window_save_path = os.path.join(
+            self.window_save_path,
+            "{}-{}-seed={}-wndsz={}-chnl={}-pre={}-rnd_p={}-rnd_cnt={}-mix_p={}-mix_al={}"
+            .format(args.model_type, args.data_name, args.seed,
+                    args.windowsize, args.use_channel,
+                    args.predef_rndaug, args.rnd_aug_prob,
+                    args.max_randaug_cnt, args.mixup_p,
+                    args.mixup_alpha))
+        
         if not os.path.exists(window_save_path):
-            os.mkdir(window_save_path)
+            os.makedirs(window_save_path)
         self.window_save_path       = window_save_path
         self.representation_type    = args.representation_type
         #assert self.data_name in []
@@ -424,6 +432,7 @@ class BASE_DATA():
             freq         = self.freq   
             windowsize   = self.windowsize
 
+            # TODO: Ask if the commented parts are relevant (line 430, 433, 441, 444) => it wasn't commented in the earlier version
             if flag == "train":
                 displacement = int(0.5 * self.windowsize)
                 #drop_for_augmentation = int(0.2 * self.windowsize)
