@@ -200,7 +200,7 @@ class data_set(Dataset):
                 mixup_y = mixup(encoded_y, other_encoded_y, self.args.mixup_alpha)	
 
             ################### RANDOM AUGMENTATIONS #############################
-            aug_count = np.random.randint(0, self.args.max_randaug_cnt)
+            aug_count = np.random.randint(0, self.args.max_randaug_cnt + 1)
             randaug = RandomAugment(aug_count, self.args.p)
             
             aug_sample_x = randaug(mixup_x[0])	
