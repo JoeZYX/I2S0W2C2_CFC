@@ -4,6 +4,9 @@ hapt:
   num_classes: 12
   num_channels: 6
   window_seconds: 2.56
+  num_acc: 3
+  num_gyro: 3
+  num_magnet: 0 
 
 oppo:
   filename: "Opportunity_Dataset/dataset"
@@ -11,7 +14,9 @@ oppo:
   num_classes: 18
   num_channels: 77
   window_seconds: 1
-
+  num_acc: 57
+  num_gyro: 
+  num_magnet: 
 
 wisdm:
   filename: "WISDM_Dataset"
@@ -19,6 +24,9 @@ wisdm:
   num_classes: 6
   num_channels: 3
   window_seconds: 5
+  num_acc: 3
+  num_gyro: 0
+  num_magnet: 0
 
 dg:
   filename: "Daphnet_Dataset/dataset"
@@ -26,6 +34,9 @@ dg:
   num_classes: 2
   num_channels: 9
   window_seconds: 1
+  num_acc: 9
+  num_gyro: 0
+  num_magnet: 0
 
 uschad:
   filename: "USC_HAD_Dataset"
@@ -33,13 +44,19 @@ uschad:
   num_classes: 12
   num_channels: 6
   window_seconds: 1
-
+  num_acc: 3
+  num_gyro: 3
+  num_magnet: 0
+  
 pamap2:
   filename: "PAMAP2_Dataset/Protocol"
   sampling_freq: 33
   num_classes: 12
   num_channels: 18
   window_seconds: 5.12
+  num_acc: 9
+  num_gyro: 9
+  num_magnet: 0
 
 rw:
   filename: "RWhar_Dataset"
@@ -47,6 +64,9 @@ rw:
   num_classes: 8
   num_channels: 21
   window_seconds: 2.56
+  num_acc: 21
+  num_gyro: 0
+  num_magnet: 0
 
 skodar:
   filename: "Skoda HAR Dataset"
@@ -54,6 +74,9 @@ skodar:
   num_classes: 10
   num_channels: 30
   window_seconds: 2.56
+  num_acc: 3
+  num_gyro: 0
+  num_magnet: 0
 
 dsads:
   filename: "DSADS_Dataset"
@@ -61,3 +84,6 @@ dsads:
   num_classes: 19
   num_channels: 45
   window_seconds: 5
+  num_acc: 3
+  num_gyro: 3
+  num_magnet: 3

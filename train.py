@@ -48,7 +48,7 @@ args.model_type       = sys.argv[2]
 args.to_save_path     = "./saved_models/it-{}/Run_logs".format(args.iteration)
 args.freq_save_path   = "./saved_models/it-{}/Freq_data".format(args.iteration)
 args.window_save_path = "./saved_models/it-{}/Sliding_window".format(args.iteration)
-args.root_path        = "./Datasets"
+args.root_path        = "../Datasets"
 
 
 args.drop_transition  = False
@@ -119,7 +119,11 @@ window_seconds       = config["window_seconds"]
 args.windowsize      =   int(window_seconds * args.sampling_freq) 
 args.input_length    =  args.windowsize
 # input information
-args.c_in            = config["num_channels"] * 3 if args.difference else config["num_channels"]
+args.c_in            = config["num_channels"]
+if args.use_channel:
+    args.c_in       += config["num_channels"] # differencing
+    args.c_in       += config["num_acc"]      # filtering
+    args.c_in       += config["num_channels"] # magnitude
 
 rnd_augs = ['jitter',
             'exponential_smoothing',
