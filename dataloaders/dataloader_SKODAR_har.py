@@ -61,7 +61,7 @@ class SkodaR_HAR_DATA(BASE_DATA):
         self.used_cols.sort()
 
         # there are total 30 sensors 
-        col_names = ["acc_x","acc_y", "acc_z"]
+        col_names = ["acc_x_1","acc_y_1", "acc_z_1"]
         self.col_names    =  ["activity_id"] + [j  for k in [[item+"_"+str(i) for item in col_names] for i in range(1,11)] for j in k ]
 
         # These two variables represent whether all sensors can be filtered according to position and sensor type

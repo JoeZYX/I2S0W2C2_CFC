@@ -1,0 +1,15 @@
+filename: HAPThar_Dataset
+num_channels: 6
+num_classes: 12
+sampling_freq: 50
+sensors:
+- acc_x_ankle
+- acc_y_ankle
+- acc_z_ankle
+- acc_x_leg
+- acc_y_leg
+- acc_z_leg
+- acc_x_trunk
+- acc_y_trunk
+- acc_z_trunk
+window_seconds: 2.56

@@ -41,7 +41,7 @@ class WISDM_HAR_DATA(BASE_DATA):
         # There is only one file which includs the collected data from 33 users
         # delete the second column it is the timestamp
         self.used_cols    = [0,1,3,4,5]
-        self.col_names    =  ['sub','activity_id','timestamp', 'acc_x', 'acc_y', 'acc_z']
+        self.col_names    =  ['sub','activity_id','timestamp', 'acc_x_1', 'acc_y_1', 'acc_z_1']
 
 
         # pos_filter ------- >  filter according to position
@@ -133,7 +133,7 @@ class WISDM_HAR_DATA(BASE_DATA):
         if self.selected_cols:
             df_all = df_all[self.selected_cols+["sub"]+["activity_id"]]
         else:
-            df_all = df_all[["acc_x","acc_y","acc_z"]+["sub"]+["activity_id"]]
+            df_all = df_all[["acc_x_1","acc_y_1","acc_z_1"]+["sub"]+["activity_id"]]
 
 
         data_y = df_all.iloc[:,-1]

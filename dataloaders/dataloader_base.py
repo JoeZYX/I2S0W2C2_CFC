@@ -64,6 +64,7 @@ class BASE_DATA():
         self.difference             = args.difference
         self.filtering              = args.filtering
         self.magnitude              = args.magnitude
+        
         self.datanorm_type          = args.datanorm_type
         self.load_all               = args.load_all
         self.train_vali_quote       = args.train_vali_quote

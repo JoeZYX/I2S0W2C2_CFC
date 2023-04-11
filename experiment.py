@@ -15,14 +15,50 @@ from models.model_builder import model_builder
 from torch.utils.data.sampler import WeightedRandomSampler
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import f1_score
-from utils import EarlyStopping, adjust_learning_rate_class, mixup_data, MixUpLoss
+from utils import EarlyStopping, adjust_learning_rate_class
+
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+from dataloaders.augmentation import RandomAugment, mixup_data
 import random
 import os
 
+
+class MixUpLoss(nn.Module):
+    """
+    Mixup implementation heavily borrowed from https://github.com/fastai/fastai/blob/master/fastai/callbacks/mixup.py#L42
+    Adapt the loss function `crit` to go with mixup.
+    """
+
+    def __init__(self, crit, reduction='mean'):
+        super().__init__()
+        if hasattr(crit, 'reduction'):
+            self.crit = crit
+            self.old_red = crit.reduction
+            setattr(self.crit, 'reduction', 'none')
+        self.reduction = reduction
+
+    def forward(self, output, target):
+        if len(target.size()) == 2:
+            loss1, loss2 = self.crit(output, target[:, 0].long()), self.crit(output, target[:, 1].long())
+            d = loss1 * target[:, 2] + loss2 * (1 - target[:, 2])
+        else:
+            d = self.crit(output, target)
+        if self.reduction == 'mean':
+            return d.mean()
+        elif self.reduction == 'sum':
+            return d.sum()
+        return d
+
+    def get_old(self):
+        if hasattr(self, 'old_crit'):
+            return self.old_crit
+        elif hasattr(self, 'old_red'):
+            setattr(self.crit, 'reduction', self.old_red)
+            return self.crit
+        
+    
 
 class Exp(object):
     def __init__(self, args):
@@ -34,6 +70,7 @@ class Exp(object):
         self.optimizer_dict = {"Adam":optim.Adam}
         self.criterion_dict = {"MSE":nn.MSELoss,"CrossEntropy":nn.CrossEntropyLoss}
 
+        # Biuld The Model
         self.model  = self.build_model().to(self.device)
         print("Done!")
         self.model_size = np.sum([para.numel() for para in self.model.parameters() if para.requires_grad])
@@ -75,6 +112,42 @@ class Exp(object):
             shuffle_flag = False
 
         data  = data_set(self.args,data,flag)
+
+
+        if flag == "train":
+            if self.args.mixup_probability < 1 or self.args.random_augmentation_prob<1:
+                random_aug =RandomAugment(self.args.random_augmentation_nr, self.args.random_augmentation_config, self.args.max_aug )
+                def collate_fn(batch):
+                    batch_x1 = []
+                    batch_x2 = []
+                    batch_y  = []
+                    
+                    for x,y,z in batch:
+
+                        if np.random.uniform(0,1,1)[0]>=self.args.random_augmentation_prob:
+                            batch_x1.append(random_aug(x))
+                        else:
+                            batch_x1.append(x)
+                        batch_x2.append(y)
+                        batch_y.append(z)
+
+                    batch_x1 = torch.tensor(np.concatenate(batch_x1, axis=0))
+                    batch_x2 = torch.tensor(batch_x2)
+                    batch_y = torch.tensor(batch_y)
+                    
+                    if np.random.uniform(0,1,1)[0] >= self.args.mixup_probability:
+
+                        batch_x1 , batch_y = mixup_data(batch_x1 , batch_y,   self.args.mixup_alpha)
+                        #print("Mixup",batch_x1.shape,batch_y.shape)
+                    #else:
+                        #print(batch_x1.shape,batch_y.shape)
+                    batch_x1 = torch.unsqueeze(batch_x1,1)
+                    return batch_x1,batch_x2,batch_y
+            else:
+                collate_fn = None
+        else:
+            collate_fn = None
+
         if weighted_sampler and flag == 'train':
 
             sampler = WeightedRandomSampler(
@@ -86,99 +159,117 @@ class Exp(object):
                                      #shuffle      =  shuffle_flag,
                                      num_workers  =  0,
                                      sampler=sampler,
-                                     drop_last    =  False)
+                                     drop_last    =  False,
+                                     collate_fn = collate_fn)
         else:
             data_loader = DataLoader(data, 
                                      batch_size   =  self.args.batch_size,
                                      shuffle      =  shuffle_flag,
                                      num_workers  =  0,
-                                     drop_last    =  False)
+                                     drop_last    =  False,
+                                     collate_fn   = collate_fn)
         return data_loader
 
 
     def get_setting_name(self):
-        if self.args.model_type == "deepconvlstm":
-            config_file = open('../../configs/model.yaml', mode='r')
-            config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm"]
-            setting = "deepconvlstm_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_lstmfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
-                                                                                                                                                        self.args.seed,
-                                                                                                                                                        self.args.windowsize,
-                                                                                                                                                        self.args.wavelet_filtering,
-                                                                                                                                                        self.args.filter_scaling_factor,
-                                                                                                                                                        config["nb_filters"],
-                                                                                                                                                        config["nb_units_lstm"],
-                                                                                                                                                        self.args.wavelet_filtering_regularization,
-                                                                                                                                                        self.args.wavelet_filtering_learnable )
-            return setting
+        if self.args.model_type in ["deepconvlstm", "deepconvlstm_attn", "mcnn", "attend", "sahar", "tinyhar"]:
+            setting = "model_{}_data_{}_seed_{}_differencing_{}_Seperation_{}_magnitude_{}_Mixup_{}_RandomAug_{}".format(self.args.model_type,
+                                                                                                                         self.args.data_name,
+                                                                                                                         self.args.seed,
+                                                                                                                         self.args.difference,
+                                                                                                                         self.args.filtering,
+                                                                                                                         self.args.magnitude,
 
-        if self.args.model_type == "deepconvlstm_attn":
-            config_file = open('../../configs/model.yaml', mode='r')
-            config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm_attn"]
-            setting = "deepconvlstm_attn_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_lstmfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
-                                                                                                                                                          self.args.seed,
-                                                                                                                                                          self.args.windowsize,
-                                                                                                                                                          self.args.wavelet_filtering,
-                                                                                                                                                          self.args.filter_scaling_factor,
-                                                                                                                                                          config["nb_filters"],
-                                                                                                                                                          config["nb_units_lstm"],
-                                                                                                                                                          self.args.wavelet_filtering_regularization,
-                                                                                                                                                          self.args.wavelet_filtering_learnable )
-            return setting
+                                                                                                                         self.args.mixup_probability,
 
+                                                                                                                         self.args.random_augmentation_nr
 
-        if self.args.model_type == "mcnn":
-            config_file = open('../../configs/model.yaml', mode='r')
-            config = yaml.load(config_file, Loader=yaml.FullLoader)["mcnn"]
-            setting = "mcnn_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
-                                                                                                                                              self.args.seed,
-                                                                                                                                              self.args.windowsize,
-                                                                                                                                              self.args.wavelet_filtering,
-                                                                                                                                              self.args.filter_scaling_factor,
-                                                                                                                                              config["nb_filters"],
-                                                                                                                                              self.args.wavelet_filtering_regularization,
-                                                                                                                                              self.args.wavelet_filtering_learnable )
-            return setting
-
-        elif self.args.model_type == "attend":
-            config_file = open('../../configs/model.yaml', mode='r')
-            config = yaml.load(config_file, Loader=yaml.FullLoader)["attend"]
-            setting = "attend_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_grufilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
-                                                                                                                                               self.args.seed,
-                                                                                                                                               self.args.windowsize,
-                                                                                                                                               self.args.wavelet_filtering,
-                                                                                                                                               self.args.filter_scaling_factor,
-                                                                                                                                               config["filter_num"],
-                                                                                                                                               config["hidden_dim"],
-                                                                                                                                               self.args.wavelet_filtering_regularization,
-                                                                                                                                               self.args.wavelet_filtering_learnable)
-            return setting
-        elif self.args.model_type == "sahar":
-            config_file = open('../../configs/model.yaml', mode='r')
-            config = yaml.load(config_file, Loader=yaml.FullLoader)["sahar"]
-            setting = "sahar_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_grufilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
-                                                                                                                                              self.args.seed,
-                                                                                                                                              self.args.windowsize,
-                                                                                                                                              self.args.wavelet_filtering,
-                                                                                                                                              self.args.filter_scaling_factor,
-                                                                                                                                              config["nb_filters"],
-                                                                                                                                              None,
-                                                                                                                                              self.args.wavelet_filtering_regularization,
-                                                                                                                                              self.args.wavelet_filtering_learnable)
-            return setting
-        elif self.args.model_type == "tinyhar":
-            config_file = open('../../configs/model.yaml', mode='r')
-            config = yaml.load(config_file, Loader=yaml.FullLoader)["tinyhar"]
-            setting = "tinyhar_data_{}_seed_{}_windowsize_{}_cvfilter_{}_CI_{}_CA_{}_TI_{}_TA_{}".format(self.args.data_name,
-                                                                                                        self.args.seed,
-                                                                                                        self.args.windowsize,
-                                                                                                        config["filter_num"],
-                                                                                                        self.args.cross_channel_interaction_type,
-                                                                                                        self.args.cross_channel_aggregation_type,
-                                                                                                        self.args.temporal_info_interaction_type,
-                                                                                                        self.args.temporal_info_aggregation_type )
+                                                                                                                         )
             return setting
         else:
             raise NotImplementedError
+        # if self.args.model_type == "deepconvlstm":
+        #     config_file = open('../../configs/model.yaml', mode='r')
+        #     config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm"]
+        #     setting = "deepconvlstm_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_lstmfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
+        #                                                                                                                                                 self.args.seed,
+        #                                                                                                                                                 self.args.windowsize,
+        #                                                                                                                                                 self.args.wavelet_filtering,
+        #                                                                                                                                                 self.args.filter_scaling_factor,
+        #                                                                                                                                                 config["nb_filters"],
+        #                                                                                                                                                 config["nb_units_lstm"],
+        #                                                                                                                                                 self.args.wavelet_filtering_regularization,
+        #                                                                                                                                                 self.args.wavelet_filtering_learnable )
+        #     return setting
+
+        # if self.args.model_type == "deepconvlstm_attn":
+        #     config_file = open('../../configs/model.yaml', mode='r')
+        #     config = yaml.load(config_file, Loader=yaml.FullLoader)["deepconvlstm_attn"]
+        #     setting = "deepconvlstm_attn_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_lstmfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
+        #                                                                                                                                                   self.args.seed,
+        #                                                                                                                                                   self.args.windowsize,
+        #                                                                                                                                                   self.args.wavelet_filtering,
+        #                                                                                                                                                   self.args.filter_scaling_factor,
+        #                                                                                                                                                   config["nb_filters"],
+        #                                                                                                                                                   config["nb_units_lstm"],
+        #                                                                                                                                                   self.args.wavelet_filtering_regularization,
+        #                                                                                                                                                   self.args.wavelet_filtering_learnable )
+        #     return setting
+
+
+        # if self.args.model_type == "mcnn":
+        #     config_file = open('../../configs/model.yaml', mode='r')
+        #     config = yaml.load(config_file, Loader=yaml.FullLoader)["mcnn"]
+        #     setting = "mcnn_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
+        #                                                                                                                                       self.args.seed,
+        #                                                                                                                                       self.args.windowsize,
+        #                                                                                                                                       self.args.wavelet_filtering,
+        #                                                                                                                                       self.args.filter_scaling_factor,
+        #                                                                                                                                       config["nb_filters"],
+        #                                                                                                                                       self.args.wavelet_filtering_regularization,
+        #                                                                                                                                       self.args.wavelet_filtering_learnable )
+        #     return setting
+
+        # elif self.args.model_type == "attend":
+        #     config_file = open('../../configs/model.yaml', mode='r')
+        #     config = yaml.load(config_file, Loader=yaml.FullLoader)["attend"]
+        #     setting = "attend_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_grufilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
+        #                                                                                                                                        self.args.seed,
+        #                                                                                                                                        self.args.windowsize,
+        #                                                                                                                                        self.args.wavelet_filtering,
+        #                                                                                                                                        self.args.filter_scaling_factor,
+        #                                                                                                                                        config["filter_num"],
+        #                                                                                                                                        config["hidden_dim"],
+        #                                                                                                                                        self.args.wavelet_filtering_regularization,
+        #                                                                                                                                        self.args.wavelet_filtering_learnable)
+        #     return setting
+        # elif self.args.model_type == "sahar":
+        #     config_file = open('../../configs/model.yaml', mode='r')
+        #     config = yaml.load(config_file, Loader=yaml.FullLoader)["sahar"]
+        #     setting = "sahar_data_{}_seed_{}_windowsize_{}_waveFilter_{}_Fscaling_{}_cvfilter_{}_grufilter_{}_Regu_{}_wavelearnble_{}".format(self.args.data_name,
+        #                                                                                                                                       self.args.seed,
+        #                                                                                                                                       self.args.windowsize,
+        #                                                                                                                                       self.args.wavelet_filtering,
+        #                                                                                                                                       self.args.filter_scaling_factor,
+        #                                                                                                                                       config["nb_filters"],
+        #                                                                                                                                       None,
+        #                                                                                                                                       self.args.wavelet_filtering_regularization,
+        #                                                                                                                                       self.args.wavelet_filtering_learnable)
+        #     return setting
+        # elif self.args.model_type == "tinyhar":
+        #     config_file = open('../../configs/model.yaml', mode='r')
+        #     config = yaml.load(config_file, Loader=yaml.FullLoader)["tinyhar"]
+        #     setting = "tinyhar_data_{}_seed_{}_windowsize_{}_cvfilter_{}_CI_{}_CA_{}_TI_{}_TA_{}".format(self.args.data_name,
+        #                                                                                                 self.args.seed,
+        #                                                                                                 self.args.windowsize,
+        #                                                                                                 config["filter_num"],
+        #                                                                                                 self.args.cross_channel_interaction_type,
+        #                                                                                                 self.args.cross_channel_aggregation_type,
+        #                                                                                                 self.args.temporal_info_interaction_type,
+        #                                                                                                 self.args.temporal_info_aggregation_type )
+        #     return setting
+        # else:
+        #     raise NotImplementedError
 
 
 
@@ -278,8 +369,7 @@ class Exp(object):
 
 
                 print("================ Build the model ================ ")	
-                if self.args.mixup:
-                     print(" Using Mixup Training")				
+		
                 self.model  = self.build_model().to(self.device)
 
 
@@ -295,7 +385,7 @@ class Exp(object):
                 #else:
                 #    criterion =  nn.CrossEntropyLoss(reduction="mean").to(self.device)#self._select_criterion()
                 criterion =  nn.CrossEntropyLoss(reduction="mean").to(self.device)
-
+                criterion = MixUpLoss(criterion)
 
 
                 for epoch in range(self.args.train_epochs):
@@ -328,6 +418,7 @@ class Exp(object):
                         #        outputs = self.model(batch_x1)[0]
                         #    else:
                         outputs = self.model(batch_x1) #--
+                        #print("outputs ", outputs.shape)
 
                         #if self.args.mixup:
                         #    criterion = MixUpLoss(criterion)

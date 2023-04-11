@@ -87,7 +87,7 @@ class USC_HAD_HAR_DATA(BASE_DATA):
         # because this dataset only has 6 columns, the label is saved in the file name, so this used cols will not be used
         self.used_cols    = [0,1,2,3,4,5]
         # This dataset only has this 6 channels
-        self.col_names = [ 'acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z' ]
+        self.col_names = [ 'acc_x_1', 'acc_y_1', 'acc_z_1', 'gyro_x_2', 'gyro_y_2', 'gyro_z_2' ]
 
 
         # These two variables represent whether all sensors can be filtered according to position and sensor type

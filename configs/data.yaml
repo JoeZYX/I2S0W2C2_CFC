@@ -4,6 +4,13 @@ hapt:
   num_classes: 12
   num_channels: 6
   window_seconds: 2.56
+  sensors:
+  - acc_x_1
+  - acc_y_1
+  - acc_z_1
+  - gyro_x_2
+  - gyro_y_2
+  - gyro_z_2
 
 oppo:
   filename: "Opportunity_Dataset/dataset"
@@ -11,6 +18,87 @@ oppo:
   num_classes: 18
   num_channels: 77
   window_seconds: 1
+  sensors:
+  - acc_x_IBack
+  - acc_y_IBack
+  - acc_z_IBack
+  - gyro_x_IBack
+  - gyro_y_IBack
+  - gyro_z_IBack
+  - magnetic_x_IBack
+  - magnetic_y_IBack
+  - magnetic_z_IBack
+  - acc_x_IRUA
+  - acc_y_IRUA
+  - acc_z_IRUA
+  - gyro_x_IRUA
+  - gyro_y_IRUA
+  - gyro_z_IRUA
+  - magnetic_x_IRUA
+  - magnetic_y_IRUA
+  - magnetic_z_IRUA
+  - acc_x_IRLA
+  - acc_y_IRLA
+  - acc_z_IRLA
+  - gyro_x_IRLA
+  - gyro_y_IRLA
+  - gyro_z_IRLA
+  - magnetic_x_IRLA
+  - magnetic_y_IRLA
+  - magnetic_z_IRLA
+  - acc_x_ILUA
+  - acc_y_ILUA
+  - acc_z_ILUA
+  - gyro_x_ILUA
+  - gyro_y_ILUA
+  - gyro_z_ILUA
+  - magnetic_x_ILUA
+  - magnetic_y_ILUA
+  - magnetic_z_ILUA
+  - acc_x_ILLA
+  - acc_y_ILLA
+  - acc_z_ILLA
+  - gyro_x_ILLA
+  - gyro_y_ILLA
+  - gyro_z_ILLA
+  - magnetic_x_ILLA
+  - magnetic_y_ILLA
+  - magnetic_z_ILLA
+  - EU_x_LSHOE
+  - EU_y_LSHOE
+  - EU_z_LSHOE
+  - acc_x_Nav_LSHOE
+  - acc_y_Nav_LSHOE
+  - acc_z_Nav_LSHOE
+  - acc_x_body_LSHOE
+  - acc_y_body_LSHOE
+  - acc_z_body_LSHOE
+  - AngVel_x_body_LSHOE
+  - AngVel_y_body_LSHOE
+  - AngVel_z_body_LSHOE
+  - AngVel_x_Nav_LSHOE
+  - AngVel_y_Nav_LSHOE
+  - AngVel_z_Nav_LSHOE
+  - Compass_none_LSHOE
+  - EU_x_RSHOE
+  - EU_y_RSHOE
+  - EU_z_RSHOE
+  - acc_x_Nav_RSHOE
+  - acc_y_Nav_RSHOE
+  - acc_z_Nav_RSHOE
+  - acc_x_body_RSHOE
+  - acc_y_body_RSHOE
+  - acc_z_body_RSHOE
+  - AngVel_x_body_RSHOE
+  - AngVel_y_body_RSHOE
+  - AngVel_z_body_RSHOE
+  - AngVel_x_Nav_RSHOE
+  - AngVel_y_Nav_RSHOE
+  - AngVel_z_Nav_RSHOE
+  - Compass_none_RSHOE
+
+
+
 
 
 wisdm:
@@ -19,6 +107,10 @@ wisdm:
   num_classes: 6
   num_channels: 3
   window_seconds: 5
+  sensors:
+  - acc_x_1
+  - acc_y_1
+  - acc_z_1
 
 dg:
   filename: "Daphnet_Dataset/dataset"
@@ -26,6 +118,16 @@ dg:
   num_classes: 2
   num_channels: 9
   window_seconds: 1
+  sensors:
+  - acc_x_ankle
+  - acc_y_ankle
+  - acc_z_ankle
+  - acc_x_leg
+  - acc_y_leg
+  - acc_z_leg
+  - acc_x_trunk
+  - acc_y_trunk
+  - acc_z_trunk
 
 uschad:
   filename: "USC_HAD_Dataset"
@@ -33,6 +135,13 @@ uschad:
   num_classes: 12
   num_channels: 6
   window_seconds: 1
+  sensors:
+  - acc_x_1
+  - acc_y_1
+  - acc_z_1
+  - gyro_x_2
+  - gyro_y_2
+  - gyro_z_2
 
 pamap2:
   filename: "PAMAP2_Dataset/Protocol"
@@ -40,6 +149,25 @@ pamap2:
   num_classes: 12
   num_channels: 18
   window_seconds: 5.12
+  sensors:
+  - acc_x_hand
+  - acc_y_hand
+  - acc_z_hand
+  - gyro_x_hand
+  - gyro_y_hand
+  - gyro_z_hand
+  - acc_x_chest
+  - acc_y_chest
+  - acc_z_chest
+  - gyro_x_chest
+  - gyro_y_chest
+  - gyro_z_chest
+  - acc_x_ankle
+  - acc_y_ankle
+  - acc_z_ankle
+  - gyro_x_ankle
+  - gyro_y_ankle
+  - gyro_z_ankle
 
 rw:
   filename: "RWhar_Dataset"
@@ -47,6 +175,28 @@ rw:
   num_classes: 8
   num_channels: 21
   window_seconds: 2.56
+  sensors:
+  - acc_x_chest
+  - acc_y_chest
+  - acc_z_chest
+  - acc_x_forearm
+  - acc_y_forearm
+  - acc_z_forearm
+  - acc_x_head
+  - acc_y_head
+  - acc_z_head
+  - acc_x_shin
+  - acc_y_shin
+  - acc_z_shin
+  - acc_x_thigh
+  - acc_y_thigh
+  - acc_z_thigh
+  - acc_x_upperarm
+  - acc_y_upperarm
+  - acc_z_upperarm
+  - acc_x_waist
+  - acc_y_waist
+  - acc_z_waist
 
 skodar:
   filename: "Skoda HAR Dataset"
@@ -54,10 +204,59 @@ skodar:
   num_classes: 10
   num_channels: 30
   window_seconds: 2.56
-
+  sensors:
+  - acc_x_1
+  - acc_y_1
+  - acc_z_1
 dsads:
   filename: "DSADS_Dataset"
   sampling_freq: 25
   num_classes: 19
   num_channels: 45
   window_seconds: 5
+  sensors:
+  - acc_x_T
+  - acc_y_T
+  - acc_z_T
+  - gyro_x_T
+  - gyro_y_T
+  - gyro_z_T
+  - mag_x_T
+  - mag_y_T
+  - mag_z_T
+  - acc_x_RA
+  - acc_y_RA
+  - acc_z_RA
+  - gyro_x_RA
+  - gyro_y_RA
+  - gyro_z_RA
+  - mag_x_RA
+  - mag_y_RA
+  - mag_z_RA
+  - acc_x_LA
+  - acc_y_LA
+  - acc_z_LA
+  - gyro_x_LA
+  - gyro_y_LA
+  - gyro_z_LA
+  - mag_x_LA
+  - mag_y_LA
+  - mag_z_LA
+  - acc_x_RL
+  - acc_y_RL
+  - acc_z_RL
+  - gyro_x_RL
+  - gyro_y_RL
+  - gyro_z_RL
+  - mag_x_RL
+  - mag_y_RL
+  - mag_z_RL
+  - acc_x_LL
+  - acc_y_LL
+  - acc_z_LL
+  - gyro_x_LL
+  - gyro_y_LL
+  - gyro_z_LL
+  - mag_x_LL
+  - mag_y_LL
+  - mag_z_LL
