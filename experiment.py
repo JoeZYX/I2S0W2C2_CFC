@@ -137,7 +137,7 @@ class Exp(object):
                     
                     if np.random.uniform(0,1,1)[0] >= self.args.mixup_probability:
 
-                        batch_x1 , batch_y = mixup_data(batch_x1 , batch_y,   self.args.mixup_alpha)
+                        batch_x1 , batch_y = mixup_data(batch_x1 , batch_y,   self.args.mixup_alpha,  argmax = self.args.mixup_argmax)
                         #print("Mixup",batch_x1.shape,batch_y.shape)
                     #else:
                         #print(batch_x1.shape,batch_y.shape)
@@ -173,7 +173,7 @@ class Exp(object):
 
     def get_setting_name(self):
         if self.args.model_type in ["deepconvlstm", "deepconvlstm_attn", "mcnn", "attend", "sahar", "tinyhar"]:
-            setting = "model_{}_data_{}_seed_{}_differencing_{}_Seperation_{}_magnitude_{}_Mixup_{}_RandomAug_{}".format(self.args.model_type,
+            setting = "model_{}_data_{}_seed_{}_differencing_{}_Seperation_{}_magnitude_{}_Mixup_{}_RandomAug_{}_Scaling_{}_Mixupargmax_{}".format(self.args.model_type,
                                                                                                                          self.args.data_name,
                                                                                                                          self.args.seed,
                                                                                                                          self.args.difference,
@@ -182,7 +182,9 @@ class Exp(object):
 
                                                                                                                          self.args.mixup_probability,
 
-                                                                                                                         self.args.random_augmentation_nr
+                                                                                                                         self.args.random_augmentation_prob,
+                                                                                                                                    self.args.filter_scaling_factor,
+                                                                                                                                                   self.args.mixup_argmax
 
                                                                                                                          )
             return setting
