@@ -389,10 +389,12 @@ class Exp(object):
                 criterion =  nn.CrossEntropyLoss(reduction="mean").to(self.device)
                 criterion = MixUpLoss(criterion)
 
-
+                print("-----------------")
                 for epoch in range(self.args.train_epochs):
 
-
+                    print(" IF you see this, there is no Training")
+                    break
+                    
                     train_loss = []
                     self.model.train()
                     epoch_time = time.time()
@@ -681,6 +683,14 @@ class Exp(object):
         total_loss = np.average(total_loss)
         acc = accuracy_score(preds,trues)
         #f_1 = f1_score(trues, preds)
+#         print("------------------11111111111111---------------")
+#         import pickle
+#         with open('preds.pickle', 'wb') as handle:
+#             pickle.dump(preds, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            
+#         with open('trues.pickle', 'wb') as handle:
+#             pickle.dump(trues, handle, protocol=pickle.HIGHEST_PROTOCOL)
+          
         f_w = f1_score(trues, preds, average='weighted')
         f_macro = f1_score(trues, preds, average='macro')
         f_micro = f1_score(trues, preds, average='micro')

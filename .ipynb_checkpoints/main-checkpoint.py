@@ -43,11 +43,11 @@ parser.add_argument('--sample-wise', dest='sample_wise', action='store_true', he
 parser.add_argument('--drop-transition', dest='drop_transition', action='store_true', help='weather to drop the transition part')
 
 # training config
-parser.add_argument('--batch-size', dest='batch_size', default=256, type=int,  help='Batch Size')
+parser.add_argument('--batch-size', dest='batch_size', default=512, type=int,  help='Batch Size')
 parser.add_argument('--shuffle', dest='shuffle', action='store_true', help='weather to shuffle the data')
 parser.add_argument('--drop-last', dest='drop_last', action='store_true', help='weather to drop the last mini batch ')
 parser.add_argument('--train-vali-quote', dest='train_vali_quote', type=float, default=0.9, help='Portion of training dataset')
-parser.add_argument('--train-epochs', dest='train_epochs', default=150, type=int,  help='Total Training Epochs')
+parser.add_argument('--train-epochs', dest='train_epochs', default=20, type=int,  help='Total Training Epochs')
 parser.add_argument('--learning-rate', dest='learning_rate', default=0.001, type=float,  help='set the initial learning rate')
 parser.add_argument('--learning-rate-patience', dest='learning_rate_patience', default=7, type=int,  help='patience for adjust the learning rate')
 parser.add_argument('--early-stop-patience', dest='early_stop_patience', default=15, type=int,  help='patience for stop the training')

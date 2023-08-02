@@ -288,3 +288,55 @@ dsads:
   - mag_x_LL
   - mag_y_LL
   - mag_z_LL
+  
+bosch:
+  filename: "Bosch_HAR_Dataset"
+  sampling_freq: 50
+  num_classes: 5
+  num_channels: 44
+  window_seconds: 2.56
+  sensors:
+  - rawMagnetometer_iPhone_magn_x
+  - rawMagnetometer_iPhone_magn_y
+  - rawMagnetometer_iPhone_magn_z
+  - deviceMotion_iPhone_roll
+  - deviceMotion_iPhone_pitch
+  - deviceMotion_iPhone_yaw
+  - deviceMotion_iPhone_gravity_x
+  - deviceMotion_iPhone_gravity_y
+  - deviceMotion_iPhone_garvity_z
+  - deviceMotion_iPhone_magneticField_x
+  - deviceMotion_iPhone_magneticField_y
+  - deviceMotion_iPhone_magneticField_z
+  - deviceMotion_iPhone_acc_x
+  - deviceMotion_iPhone_acc_y
+  - deviceMotion_iPhone_acc_z
+  - deviceMotion_iPhone_rotationRate_x
+  - deviceMotion_iPhone_rotationRate_y
+  - deviceMotion_iPhone_rotationRate_z
+  - relAltitude_AppleWatch_pressure
+  - location_iPhone_speed
+  - deviceMotion_AppleWatch_roll
+  - deviceMotion_AppleWatch_pitch
+  - deviceMotion_AppleWatch_yaw
+  - deviceMotion_AppleWatch_gravity_x
+  - deviceMotion_AppleWatch_gravity_y
+  - deviceMotion_AppleWatch_garvity_z
+  - deviceMotion_AppleWatch_magneticField_x
+  - deviceMotion_AppleWatch_magneticField_y
+  - deviceMotion_AppleWatch_magneticField_z
+  - deviceMotion_AppleWatch_acc_x
+  - deviceMotion_AppleWatch_acc_y
+  - deviceMotion_AppleWatch_acc_z
+  - deviceMotion_AppleWatch_rotationRate_x
+  - deviceMotion_AppleWatch_rotationRate_y
+  - deviceMotion_AppleWatch_rotationRate_z
+  - rawRotationRate_iPhone_acc_x
+  - rawRotationRate_iPhone_acc_y
+  - rawRotationRate_iPhone_acc_z
+  - location_AppleWatch_speed
+  - relAltitude_iPhone_pressure
+  - rawAccelerometer_iPhone_acc_x
+  - rawAccelerometer_iPhone_acc_y
+  - rawAccelerometer_iPhone_acc_z
+  - WatchWorkout_HeartRate_AppleWatch_HeartRate
